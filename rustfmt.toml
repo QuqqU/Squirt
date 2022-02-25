@@ -1,4 +1,3 @@
 brace_style = "PreferSameLine"
 control_brace_style = "ClosingNextLine"
-# indent_style = "Visual"
 struct_field_align_threshold = 20
