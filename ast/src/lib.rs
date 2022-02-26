@@ -1,4 +1,3 @@
-
 use token::TokenType;
 
 pub struct Identifier {
@@ -15,6 +14,10 @@ pub enum Statement {
         name:  Identifier,
         value: Expression,
     },
+    Return {
+        token: TokenType, // token::RETURN
+        value: Expression,
+    },
 }
 
 pub struct Program {
@@ -25,4 +28,3 @@ impl Program {
         self.statements.is_empty()
     }
 }
-

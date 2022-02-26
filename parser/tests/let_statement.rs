@@ -30,4 +30,32 @@ mod parser_tests {
             };
         }
     }
+    
+    #[test]
+    fn test_return() {
+        let input = "
+            return five = 5;
+            return ten;
+            return 123;
+            return add(five, ten);
+            return add(five, 15);
+        "
+        .to_string();
+
+        // let expected_ident: Vec<&str> = vec!["five", "ten", "result"];
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        assert_eq!(program.statements.len(), 5);
+
+        for stmt in program.statements {
+            match stmt {
+                ast::Statement::Return { token, value } => {
+                    assert_eq!(token, token::RETURN);
+                }
+                _ => panic!("Not a Let statement"),
+            };
+        }
+    }
 }

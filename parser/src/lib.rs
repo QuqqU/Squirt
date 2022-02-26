@@ -53,6 +53,7 @@ impl Parser {
     fn parse_statement(&mut self) -> ast::Statement {
         match self.curr_token.token_type {
             token::LET => self.parse_let_statement(),
+            token::RETURN => self.parse_return_statement(),
             _ => ast::Statement::Undefined {},
         }
     }
@@ -83,6 +84,23 @@ impl Parser {
         let stmt = ast::Statement::Let {
             token: token_type,
             name:  var_name,
+            value: ast::Expression {},
+        };
+
+        stmt
+    }
+
+    fn parse_return_statement(&mut self) -> ast::Statement {
+        let token_type = self.curr_token.token_type;
+        self.next_token();
+
+        //todo expression
+        while self.curr_token.token_type != token::SEMICOLON {
+            self.next_token();
+        }
+
+        let stmt = ast::Statement::Return {
+            token: token_type,
             value: ast::Expression {},
         };
 
