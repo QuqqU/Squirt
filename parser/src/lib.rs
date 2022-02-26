@@ -40,7 +40,6 @@ impl Parser {
 }
 
 impl Parser {
-
     pub fn parse_program(&mut self) -> ast::Program {
         let mut program = ast::Program { statements: vec![] };
         while self.curr_token.token_type != token::EOF {
@@ -51,14 +50,14 @@ impl Parser {
         program
     }
 
-    fn parse_statement(&mut self) -> Box<dyn ast::Statement> {
+    fn parse_statement(&mut self) -> ast::Statement {
         match self.curr_token.token_type {
-            token::LET => Box::new(self.parse_let_statement()),
-            _ => Box::new(ast::UndefinedStatement {}),
+            token::LET => self.parse_let_statement(),
+            _ => ast::Statement::Undefined {},
         }
     }
 
-    fn parse_let_statement(&mut self) -> ast::LetStatement {
+    fn parse_let_statement(&mut self) -> ast::Statement {
         let token_type = self.curr_token.token_type;
 
         if !self.expect_next(token::IDENT) {
@@ -81,7 +80,7 @@ impl Parser {
             self.next_token();
         }
 
-        let stmt = ast::LetStatement {
+        let stmt = ast::Statement::Let {
             token: token_type,
             name:  var_name,
             value: ast::Expression {},

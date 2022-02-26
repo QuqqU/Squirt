@@ -18,18 +18,16 @@ mod parser_tests {
         assert_eq!(program.statements.len(), 3);
 
         for (i, exp) in expected_ident.iter().enumerate() {
-            let stmt = program.statements[i]
-                .as_any()
-                .downcast_ref::<ast::LetStatement>();
+            let stmt = &program.statements[i];
 
-            let stmt = match stmt {
-                Some(s) => s,
-                None => panic!("Let stmt!!"),
+            match stmt {
+                ast::Statement::Let { token, name, value } => {
+                    assert_eq!(*token, token::LET);
+                    assert_eq!(name.token, token::IDENT);
+                    assert_eq!(name.value, *exp);
+                }
+                _ => panic!("Not a Let statement"),
             };
-
-            assert_eq!(stmt.token, token::LET);
-            assert_eq!(stmt.name.token, token::IDENT);
-            assert_eq!(stmt.name.value, *exp);
         }
     }
 }
