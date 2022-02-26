@@ -4,4 +4,6 @@ members = [
   "squirtc",
   "token",
   "lexer",
+  "ast",
+  "parser"
 ]
