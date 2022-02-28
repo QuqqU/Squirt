@@ -12,6 +12,7 @@ pub struct Identifier {
 pub enum Expression {
     Undefined,
     Ident(Identifier),
+    IntegerLiteral { token: TokenType, value: i64 },
 }
 // impl Debug for Expression {}
 

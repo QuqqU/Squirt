@@ -42,6 +42,7 @@ impl Parser {
         };
 
         p.register_prefix(token::IDENT, Parser::parse_ident);
+        p.register_prefix(token::INT, Parser::parse_integer_literal);
 
         p
     }
@@ -159,12 +160,23 @@ impl Parser {
         self.infix_parse_funcs.insert(token_type, infix_parse_fn);
     }
 
+    //////////////////
+
     fn parse_ident(&self) -> ast::Expression {
         ast::Expression::Ident(ast::Identifier {
             token: self.curr_token.token_type,
             value: self.curr_token.literal.clone(),
         })
     }
+
+    fn parse_integer_literal(&self) -> ast::Expression {
+        ast::Expression::IntegerLiteral {
+            token: self.curr_token.token_type,
+            value: self.curr_token.literal.parse().unwrap(),
+        }
+    }
+
+    //////////////////
 
     fn parse_expression(&self, priority: Priority) -> ast::Expression {
         let prefix = self.prefix_parse_funcs.get(self.curr_token.token_type);

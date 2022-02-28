@@ -85,4 +85,33 @@ mod parser_tests {
             };
         }
     }
+
+    #[test]
+    fn test_integer_literal_expression() {
+        let input = "
+            12345;
+        "
+        .to_string();
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        assert_eq!(program.statements.len(), 1);
+
+        for stmt in program.statements {
+            match stmt {
+                ast::Statement::Expr { token, expression } => {
+                    assert_eq!(token, token::INT);
+                    match expression {
+                        ast::Expression::IntegerLiteral { token, value } => {
+                            assert_eq!(token, token::INT);
+                            assert_eq!(value, 12345);
+                        }
+                        _ => panic!("Not a Expression::IntegerLiteral"),
+                    }
+                }
+                _ => panic!("Not a Expr statement"),
+            };
+        }
+    }
 }
