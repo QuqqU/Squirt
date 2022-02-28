@@ -30,7 +30,7 @@ mod parser_tests {
             };
         }
     }
-    
+
     #[test]
     fn test_return() {
         let input = "
@@ -41,8 +41,6 @@ mod parser_tests {
             return add(five, 15);
         "
         .to_string();
-
-        // let expected_ident: Vec<&str> = vec!["five", "ten", "result"];
 
         let mut p = parser::Parser::new(lexer::Lexer::new(input));
         let program = p.parse_program();
@@ -55,6 +53,35 @@ mod parser_tests {
                     assert_eq!(token, token::RETURN);
                 }
                 _ => panic!("Not a Let statement"),
+            };
+        }
+    }
+
+    #[test]
+    fn test_ident_expression() {
+        let input = "
+            foobar;
+        "
+        .to_string();
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        assert_eq!(program.statements.len(), 1);
+
+        for stmt in program.statements {
+            match stmt {
+                ast::Statement::Expr { token, expression } => {
+                    assert_eq!(token, token::IDENT);
+                    match expression {
+                        ast::Expression::Ident(ident) => {
+                            assert_eq!(ident.token, token::IDENT);
+                            assert_eq!(ident.value, "foobar");
+                        }
+                        _ => panic!("Not a Expression::Ident"),
+                    }
+                }
+                _ => panic!("Not a Expr statement"),
             };
         }
     }

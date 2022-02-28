@@ -1,12 +1,30 @@
+use std::collections::HashMap;
+
 use lexer::Lexer;
-use token::Token;
+use token::{Token, TokenType};
+
+type PrefixParseFn = fn(&Parser) -> ast::Expression;
+type InfixParseFn = fn(ast::Expression) -> ast::Expression;
+
+enum Priority {
+    Lowest,
+    Equals,
+    LessGreater,
+    Sum,
+    Product,
+    Prefix,
+    Call,
+}
 
 pub struct Parser {
     lexer:      Lexer,
     curr_token: Token,
     next_token: Token,
+
     // todo errors
     // errors:     Vec<String>,
+    prefix_parse_funcs: HashMap<TokenType, PrefixParseFn>,
+    infix_parse_funcs:  HashMap<TokenType, InfixParseFn>,
 }
 
 impl Parser {
@@ -14,12 +32,18 @@ impl Parser {
         let ctoken = l.next_token();
         let ntoken = l.next_token();
 
-        Self {
-            lexer:      l,
-            curr_token: ctoken,
-            next_token: ntoken,
+        let mut p = Self {
+            lexer:              l,
+            curr_token:         ctoken,
+            next_token:         ntoken,
             // errors:     vec![],
-        }
+            prefix_parse_funcs: HashMap::new(),
+            infix_parse_funcs:  HashMap::new(),
+        };
+
+        p.register_prefix(token::IDENT, Parser::parse_ident);
+
+        p
     }
 
     fn next_token(&mut self) {
@@ -39,6 +63,7 @@ impl Parser {
     }
 }
 
+// for statement
 impl Parser {
     pub fn parse_program(&mut self) -> ast::Program {
         let mut program = ast::Program { statements: vec![] };
@@ -54,7 +79,7 @@ impl Parser {
         match self.curr_token.token_type {
             token::LET => self.parse_let_statement(),
             token::RETURN => self.parse_return_statement(),
-            _ => ast::Statement::Undefined {},
+            _ => self.parse_expr_statement(),
         }
     }
 
@@ -84,7 +109,7 @@ impl Parser {
         let stmt = ast::Statement::Let {
             token: token_type,
             name:  var_name,
-            value: ast::Expression {},
+            value: ast::Expression::Undefined,
         };
 
         stmt
@@ -101,9 +126,54 @@ impl Parser {
 
         let stmt = ast::Statement::Return {
             token: token_type,
-            value: ast::Expression {},
+            value: ast::Expression::Undefined,
         };
 
         stmt
+    }
+
+    fn parse_expr_statement(&mut self) -> ast::Statement {
+        let token_type = self.curr_token.token_type;
+        let expr = self.parse_expression(Priority::Lowest);
+
+        if self.expect_next(token::SEMICOLON) {
+            self.next_token();
+        }
+
+        let stmt = ast::Statement::Expr {
+            token:      token_type,
+            expression: expr,
+        };
+
+        stmt
+    }
+}
+
+// for
+impl Parser {
+    fn register_prefix(&mut self, token_type: TokenType, prefix_parse_fn: PrefixParseFn) {
+        self.prefix_parse_funcs.insert(token_type, prefix_parse_fn);
+    }
+
+    fn register_infix(&mut self, token_type: TokenType, infix_parse_fn: InfixParseFn) {
+        self.infix_parse_funcs.insert(token_type, infix_parse_fn);
+    }
+
+    fn parse_ident(&self) -> ast::Expression {
+        ast::Expression::Ident(ast::Identifier {
+            token: self.curr_token.token_type,
+            value: self.curr_token.literal.clone(),
+        })
+    }
+
+    fn parse_expression(&self, priority: Priority) -> ast::Expression {
+        let prefix = self.prefix_parse_funcs.get(self.curr_token.token_type);
+        if let Some(prefix) = prefix {
+            let left_exp = prefix(self);
+            left_exp
+        }
+        else {
+            ast::Expression::Undefined
+        }
     }
 }
