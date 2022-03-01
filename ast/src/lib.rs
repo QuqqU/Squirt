@@ -1,21 +1,55 @@
-// use std::fmt::*;
+use std::fmt::*;
 
 use token::TokenType;
 
-// #[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Identifier {
     pub token: TokenType, // token::IDENT
     pub value: String,
 }
 
-// #[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     Undefined,
     Ident(Identifier),
-    IntegerLiteral { token: TokenType, value: i64 },
+    IntegerLiteral {
+        token: TokenType,
+        value: i64,
+    },
+    Prefix {
+        token:    TokenType,
+        operator: String,
+        right:    Box<Expression>,
+    },
+    Infix {
+        token:    TokenType,
+        left:     Box<Expression>,
+        operator: String,
+        right:    Box<Expression>,
+    },
 }
-// impl Debug for Expression {}
+impl Expression {
+    pub fn to_string(&self) -> String {
+        match self {
+            Self::Ident(i) => format!("{}", i.value),
+            Self::IntegerLiteral { token: _, value } => format!("{}", value),
+            Self::Prefix {
+                token: _,
+                operator,
+                right,
+            } => format!("({}{})", operator, right.to_string()),
+            Self::Infix {
+                token: _,
+                left,
+                operator,
+                right,
+            } => format!("({} {} {})", left.to_string(), operator, right.to_string()),
+            _ => format!("Undefined"),
+        }
+    }
+}
 
+#[derive(Debug)]
 pub enum Statement {
     Let {
         token: TokenType, // token::LET
@@ -27,20 +61,28 @@ pub enum Statement {
         value: Expression,
     },
     Expr {
-        token:      TokenType,
+        token:      TokenType, //expression 의 첫 토큰
         expression: Expression,
     },
 }
-// impl Debug for Statement {
-//     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-//         match self {
-//             Self::Let { token, name, value } => write!(f, "let {} = {:?};", name.value, value),
-//             Self::Return { token, value } => write!(f, "return {:?};", value),
-//             Self::Expr { token, expression } => write!(f, "{:?};", expression),
-//         }
-//     }
-// }
+impl Statement {
+    pub fn to_string(&self) -> String {
+        match self {
+            Self::Let {
+                token: _,
+                name,
+                value,
+            } => format!("let {} = {:?};", name.value, value),
+            Self::Return { token: _, value } => format!("return {:?};", value),
+            Self::Expr {
+                token: _,
+                expression,
+            } => format!("{}", expression.to_string()),
+        }
+    }
+}
 
+#[derive(Debug)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }

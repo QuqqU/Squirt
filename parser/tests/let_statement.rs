@@ -114,4 +114,218 @@ mod parser_tests {
             };
         }
     }
+
+    #[test]
+    fn test_prefix_expression() {
+        let input = "
+            -15;
+            !5;
+        "
+        .to_string();
+
+        let expected: Vec<ast::Expression> = vec![
+            ast::Expression::Prefix {
+                token:    token::MINUS,
+                operator: String::from("-"),
+                right:    Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 15,
+                }),
+            },
+            ast::Expression::Prefix {
+                token:    token::BANG,
+                operator: String::from("!"),
+                right:    Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 5,
+                }),
+            },
+        ];
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        assert_eq!(program.statements.len(), 2);
+
+        for (i, exp) in expected.iter().enumerate() {
+            let stmt = &program.statements[i];
+
+            match stmt {
+                ast::Statement::Expr { token, expression } => {
+                    assert_eq!(expression, exp);
+                }
+                _ => panic!("Not a Expr Statement"),
+            };
+        }
+    }
+
+    #[test]
+    fn test_infix_expression() {
+        let input = "
+            1 + 1;
+            1 - 1;
+            1 * 1;
+            1 / 1;
+            1 < 1;
+            1 > 1;
+            1 == 1;
+            1 != 1;
+        "
+        .to_string();
+
+        let expected: Vec<ast::Expression> = vec![
+            ast::Expression::Infix {
+                token:    token::PLUS,
+                left:     Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+                operator: String::from("+"),
+                right:    Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+            },
+            ast::Expression::Infix {
+                token:    token::MINUS,
+                left:     Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+                operator: String::from("-"),
+                right:    Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+            },
+            ast::Expression::Infix {
+                token:    token::ASTERISK,
+                left:     Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+                operator: String::from("*"),
+                right:    Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+            },
+            ast::Expression::Infix {
+                token:    token::SLASH,
+                left:     Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+                operator: String::from("/"),
+                right:    Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+            },
+            ast::Expression::Infix {
+                token:    token::LT,
+                left:     Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+                operator: String::from("<"),
+                right:    Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+            },
+            ast::Expression::Infix {
+                token:    token::GT,
+                left:     Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+                operator: String::from(">"),
+                right:    Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+            },
+            ast::Expression::Infix {
+                token:    token::EQ,
+                left:     Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+                operator: String::from("=="),
+                right:    Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+            },
+            ast::Expression::Infix {
+                token:    token::NEQ,
+                left:     Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+                operator: String::from("!="),
+                right:    Box::new(ast::Expression::IntegerLiteral {
+                    token: token::INT,
+                    value: 1,
+                }),
+            },
+        ];
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        assert_eq!(program.statements.len(), 8);
+
+        for (i, exp) in expected.iter().enumerate() {
+            let stmt = &program.statements[i];
+
+            match stmt {
+                ast::Statement::Expr { token, expression } => {
+                    assert_eq!(expression, exp);
+                }
+                _ => panic!("Not a Expr Statement"),
+            };
+        }
+    }
+
+    #[test]
+    fn test_operator_precedence_expression() {
+        let input = "
+            -a * b;
+            !-a;
+            a + b + c;
+            a + b - c;
+            a * b * c;
+            a * b / c;
+            a + b / c;
+            a + b * c + d / e - f;
+            5 > 4 != 3 < 4;
+            3 + 4 * 5 == 3 * 1 + 4 * 5;
+        "
+        .to_string();
+
+        let expected: Vec<&str> = vec![
+            "((-a) * b)",
+            "(!(-a))",
+            "((a + b) + c)",
+            "((a + b) - c)",
+            "((a * b) * c)",
+            "((a * b) / c)",
+            "(a + (b / c))",
+            "(((a + (b * c)) + (d / e)) - f)",
+            "((5 > 4) != (3 < 4))",
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+        ];
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        assert_eq!(program.statements.len(), 10);
+
+        for (i, exp) in expected.iter().enumerate() {
+            let stmt = &program.statements[i];
+            assert_eq!(stmt.to_string(), *exp);
+        }
+    }
 }
