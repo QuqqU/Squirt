@@ -72,8 +72,8 @@ impl Statement {
                 token: _,
                 name,
                 value,
-            } => format!("let {} = {:?};", name.value, value),
-            Self::Return { token: _, value } => format!("return {:?};", value),
+            } => format!("let {} = {};", name.value, value.to_string()),
+            Self::Return { token: _, value } => format!("return {};", value.to_string()),
             Self::Expr {
                 token: _,
                 expression,

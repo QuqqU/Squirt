@@ -1,7 +1,7 @@
-use std::{collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
 use lexer::Lexer;
-use token::{Token, TokenType};
+use token::{self, Token, TokenType};
 
 type PrefixParseFn = fn(&mut Parser) -> ast::Expression;
 type InfixParseFn = fn(&mut Parser, ast::Expression) -> ast::Expression;
@@ -249,7 +249,7 @@ impl Parser {
         let prefix = self.prefix_parse_funcs.get(self.curr_token.token_type);
         if let Some(prefix) = prefix {
             let mut left_exp = prefix(self);
-            
+
             while !self.expect_next(token::SEMICOLON) && priority < self.next_precedence() {
                 let infix = self
                     .infix_parse_funcs
