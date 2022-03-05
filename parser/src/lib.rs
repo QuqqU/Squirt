@@ -131,16 +131,15 @@ impl Parser {
             panic!("PAR0002: No ASSIGN sign after ident");
             // if error return null
         }
+        self.next_token();
 
-        //todo expression
-        while self.curr_token.token_type != token::SEMICOLON {
-            self.next_token();
-        }
+        let value = self.parse_expression(Priority::Lowest);
+        self.expect_next(token::SEMICOLON);
 
         let stmt = ast::Statement::Let {
             token: token_type,
-            name:  var_name,
-            value: ast::Expression::Undefined,
+            name: var_name,
+            value,
         };
 
         stmt
@@ -150,14 +149,12 @@ impl Parser {
         let token_type = self.curr_token.token_type;
         self.next_token();
 
-        //todo expression
-        while self.curr_token.token_type != token::SEMICOLON {
-            self.next_token();
-        }
+        let value = self.parse_expression(Priority::Lowest);
+        self.expect_next(token::SEMICOLON);
 
         let stmt = ast::Statement::Return {
             token: token_type,
-            value: ast::Expression::Undefined,
+            value,
         };
 
         stmt
@@ -292,6 +289,7 @@ impl Parser {
         }
         self.next_token();
 
+        // else { alternative }
         let consequence = self.parse_block_statement();
         let mut alternative = vec![];
         if self.expect_next(token::ELSE) {

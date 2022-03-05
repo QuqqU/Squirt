@@ -1,9 +1,9 @@
 [workspace]
 
 members = [
-  "squirtc",
   "token",
   "lexer",
   "ast",
-  "parser"
+  "parser",
+  "repl",
 ]
