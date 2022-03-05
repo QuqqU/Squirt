@@ -71,6 +71,7 @@ impl Parser {
         p.register_prefix(token::FALSE, Parser::parse_boolean);
 
         p.register_prefix(token::LPAREN, Parser::parse_grouped_expression);
+        p.register_prefix(token::IF, Parser::parse_if_expression);
 
         p
     }
@@ -267,6 +268,58 @@ impl Parser {
         else {
             expression
         }
+    }
+
+    fn parse_if_expression(&mut self) -> ast::Expression {
+        // if
+        let token = self.curr_token.token_type;
+
+        // (condition)
+        if !self.expect_next(token::LPAREN) {
+            return ast::Expression::Undefined;
+        }
+        self.next_token();
+
+        let condition = Box::new(self.parse_expression(Priority::Lowest));
+
+        if !self.expect_next(token::RPAREN) {
+            return ast::Expression::Undefined;
+        }
+
+        // { consequence }
+        if !self.expect_next(token::LBRACE) {
+            return ast::Expression::Undefined;
+        }
+        self.next_token();
+
+        let consequence = self.parse_block_statement();
+        let mut alternative = vec![];
+        if self.expect_next(token::ELSE) {
+            if !self.expect_next(token::LBRACE) {
+                return ast::Expression::Undefined;
+            }
+            self.next_token();
+            alternative = self.parse_block_statement();
+        }
+
+        ast::Expression::If {
+            token,
+            condition,
+            consequence,
+            alternative,
+        }
+    }
+
+    fn parse_block_statement(&mut self) -> Vec<ast::Statement> {
+        let mut block_stmt = vec![];
+        while self.curr_token.token_type != token::RBRACE
+            && self.curr_token.token_type != token::EOF
+        {
+            let stmt = self.parse_statement();
+            block_stmt.push(stmt);
+            self.next_token();
+        }
+        block_stmt
     }
 
     //////////////////

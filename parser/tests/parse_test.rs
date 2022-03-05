@@ -399,4 +399,107 @@ mod parser_tests {
             }
         }
     }
+
+    #[test]
+    fn test_if_expression() {
+        let input = "
+            if (x < y) { x }
+        "
+        .to_string();
+
+        let expected = ast::Expression::If {
+            token:       token::IF,
+            condition:   Box::new(ast::Expression::Infix {
+                token:    token::LT,
+                left:     Box::new(ast::Expression::Ident(ast::Identifier {
+                    token: token::IDENT,
+                    value: "x".to_owned(),
+                })),
+                operator: "<".to_owned(),
+                right:    Box::new(ast::Expression::Ident(ast::Identifier {
+                    token: token::IDENT,
+                    value: "y".to_owned(),
+                })),
+            }),
+            consequence: vec![ast::Statement::Expr {
+                token:      token::IDENT,
+                expression: ast::Expression::Ident(ast::Identifier {
+                    token: token::IDENT,
+                    value: "x".to_owned(),
+                }),
+            }],
+            alternative: vec![],
+        };
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        assert_eq!(program.statements.len(), 1);
+
+        let stmt = &program.statements[0];
+        match stmt {
+            ast::Statement::Expr {
+                token: _,
+                expression,
+            } => assert_eq!(*expression, expected),
+            _ => panic!("Not a Expr Statement"),
+        }
+    }
+
+    #[test]
+    fn test_if_else_expression() {
+        let input = "
+            if (x < y) { x } else { y }
+            if (x < y) { x } else { y }
+            if (x < y) { x } else { y };
+            if (x < y) { x } else { y };
+            if (x < y) { x } else { y }
+        "
+        .to_string();
+
+        let expected = ast::Expression::If {
+            token:       token::IF,
+            condition:   Box::new(ast::Expression::Infix {
+                token:    token::LT,
+                left:     Box::new(ast::Expression::Ident(ast::Identifier {
+                    token: token::IDENT,
+                    value: "x".to_owned(),
+                })),
+                operator: "<".to_owned(),
+                right:    Box::new(ast::Expression::Ident(ast::Identifier {
+                    token: token::IDENT,
+                    value: "y".to_owned(),
+                })),
+            }),
+            consequence: vec![ast::Statement::Expr {
+                token:      token::IDENT,
+                expression: ast::Expression::Ident(ast::Identifier {
+                    token: token::IDENT,
+                    value: "x".to_owned(),
+                }),
+            }],
+            alternative: vec![ast::Statement::Expr {
+                token:      token::IDENT,
+                expression: ast::Expression::Ident(ast::Identifier {
+                    token: token::IDENT,
+                    value: "y".to_owned(),
+                }),
+            }],
+        };
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        assert_eq!(program.statements.len(), 5);
+
+        for stmt in &program.statements {
+            match stmt {
+                ast::Statement::Expr {
+                    token: _,
+                    expression,
+                } => assert_eq!(*expression, expected),
+                _ => panic!("Not a Expr Statement"),
+            }
+        }
+    }
 }

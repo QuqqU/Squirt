@@ -7,6 +7,7 @@ pub struct Identifier {
     pub token: TokenType, // token::IDENT
     pub value: String,
 }
+// pub type BlockStatement = Vec<Statement>;
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
@@ -31,6 +32,12 @@ pub enum Expression {
         token: TokenType,
         value: bool,
     },
+    If {
+        token:       TokenType,
+        condition:   Box<Expression>,
+        consequence: Vec<Statement>,
+        alternative: Vec<Statement>,
+    },
 }
 impl Expression {
     pub fn to_string(&self) -> String {
@@ -49,12 +56,30 @@ impl Expression {
                 right,
             } => format!("({} {} {})", left.to_string(), operator, right.to_string()),
             Self::Bool { token: _, value } => format!("{}", value),
+            Self::If {
+                token: _,
+                condition,
+                consequence,
+                alternative,
+            } => {
+                if !alternative.is_empty() {
+                    format!(
+                        "if({}) {:?} else {:?}",
+                        condition.to_string(),
+                        consequence,
+                        alternative
+                    )
+                }
+                else {
+                    format!("if({}) {:?}", condition.to_string(), consequence)
+                }
+            }
             _ => format!("Undefined"),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     Let {
         token: TokenType, // token::LET
