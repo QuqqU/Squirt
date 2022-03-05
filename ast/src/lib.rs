@@ -1,4 +1,4 @@
-use std::fmt::*;
+use std::{any::Any, fmt::*};
 
 use token::TokenType;
 
@@ -8,6 +8,10 @@ pub struct Identifier {
     pub value: String,
 }
 // pub type BlockStatement = Vec<Statement>;
+
+pub trait Node {
+    fn as_any(&self) -> &dyn Any;
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
@@ -38,6 +42,11 @@ pub enum Expression {
         consequence: Vec<Statement>,
         alternative: Vec<Statement>,
     },
+}
+impl Node for Expression {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 impl Expression {
     pub fn to_string(&self) -> String {
@@ -95,6 +104,11 @@ pub enum Statement {
         expression: Expression,
     },
 }
+impl Node for Statement {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
 impl Statement {
     pub fn to_string(&self) -> String {
         match self {
@@ -115,6 +129,11 @@ impl Statement {
 #[derive(Debug)]
 pub struct Program {
     pub statements: Vec<Statement>,
+}
+impl Node for Program {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 impl Program {
     pub fn empty(&self) -> bool {

@@ -15,7 +15,7 @@ mod parser_tests {
         let mut p = parser::Parser::new(lexer::Lexer::new(input));
         let program = p.parse_program();
 
-        assert_eq!(program.statements.len(), 3);
+        assert_eq!(program.statements.len(), expected_ident.len());
 
         for (i, exp) in expected_ident.iter().enumerate() {
             let stmt = &program.statements[i];

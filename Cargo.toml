@@ -6,4 +6,6 @@ members = [
   "ast",
   "parser",
   "repl",
+  "eval",
+  "object",
 ]
