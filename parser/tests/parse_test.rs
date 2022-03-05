@@ -120,6 +120,8 @@ mod parser_tests {
         let input = "
             -15;
             !5;
+            !true;
+            !false;
         "
         .to_string();
 
@@ -140,12 +142,28 @@ mod parser_tests {
                     value: 5,
                 }),
             },
+            ast::Expression::Prefix {
+                token:    token::BANG,
+                operator: String::from("!"),
+                right:    Box::new(ast::Expression::Bool {
+                    token: token::TRUE,
+                    value: true,
+                }),
+            },
+            ast::Expression::Prefix {
+                token:    token::BANG,
+                operator: String::from("!"),
+                right:    Box::new(ast::Expression::Bool {
+                    token: token::FALSE,
+                    value: false,
+                }),
+            },
         ];
 
         let mut p = parser::Parser::new(lexer::Lexer::new(input));
         let program = p.parse_program();
 
-        assert_eq!(program.statements.len(), 2);
+        assert_eq!(program.statements.len(), 4);
 
         for (i, exp) in expected.iter().enumerate() {
             let stmt = &program.statements[i];
@@ -281,7 +299,10 @@ mod parser_tests {
             let stmt = &program.statements[i];
 
             match stmt {
-                ast::Statement::Expr { token, expression } => {
+                ast::Statement::Expr {
+                    token: _,
+                    expression,
+                } => {
                     assert_eq!(expression, exp);
                 }
                 _ => panic!("Not a Expr Statement"),
@@ -292,8 +313,8 @@ mod parser_tests {
     #[test]
     fn test_operator_precedence_expression() {
         let input = "
-            -a * b;
             !-a;
+            -a * b;
             a + b + c;
             a + b - c;
             a * b * c;
@@ -302,12 +323,18 @@ mod parser_tests {
             a + b * c + d / e - f;
             5 > 4 != 3 < 4;
             3 + 4 * 5 == 3 * 1 + 4 * 5;
+            3 > 5 == false;
+            true == 3 < 5;
+            -1 + ((2 + 3) - 4) * 5;
+            1 + (2 + 3) / 4;
+            -(1 + 1);
+            !(true == !false);
         "
         .to_string();
 
         let expected: Vec<&str> = vec![
-            "((-a) * b)",
             "(!(-a))",
+            "((-a) * b)",
             "((a + b) + c)",
             "((a + b) - c)",
             "((a * b) * c)",
@@ -316,16 +343,60 @@ mod parser_tests {
             "(((a + (b * c)) + (d / e)) - f)",
             "((5 > 4) != (3 < 4))",
             "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            "((3 > 5) == false)",
+            "(true == (3 < 5))",
+            "((-1) + (((2 + 3) - 4) * 5))",
+            "(1 + ((2 + 3) / 4))",
+            "(-(1 + 1))",
+            "(!(true == (!false)))",
         ];
 
         let mut p = parser::Parser::new(lexer::Lexer::new(input));
         let program = p.parse_program();
 
-        assert_eq!(program.statements.len(), 10);
+        assert_eq!(program.statements.len(), expected.len());
 
         for (i, exp) in expected.iter().enumerate() {
             let stmt = &program.statements[i];
             assert_eq!(stmt.to_string(), *exp);
+        }
+    }
+
+    #[test]
+    fn test_boolean_expression() {
+        let input = "
+            true;
+            false;
+        "
+        .to_string();
+
+        let expected: Vec<ast::Expression> = vec![
+            ast::Expression::Bool {
+                token: token::TRUE,
+                value: true,
+            },
+            ast::Expression::Bool {
+                token: token::FALSE,
+                value: false,
+            },
+        ];
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        assert_eq!(program.statements.len(), 2);
+
+        for (i, exp) in expected.iter().enumerate() {
+            let stmt = &program.statements[i];
+            match stmt {
+                ast::Statement::Expr {
+                    token: _,
+                    expression,
+                } => {
+                    assert_eq!(expression, exp);
+                }
+                _ => panic!("Not a Expr Statement"),
+            }
         }
     }
 }

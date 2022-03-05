@@ -27,6 +27,10 @@ pub enum Expression {
         operator: String,
         right:    Box<Expression>,
     },
+    Bool {
+        token: TokenType,
+        value: bool,
+    },
 }
 impl Expression {
     pub fn to_string(&self) -> String {
@@ -44,6 +48,7 @@ impl Expression {
                 operator,
                 right,
             } => format!("({} {} {})", left.to_string(), operator, right.to_string()),
+            Self::Bool { token: _, value } => format!("{}", value),
             _ => format!("Undefined"),
         }
     }

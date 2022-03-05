@@ -54,7 +54,6 @@ pub const GT: TokenType = ">";
 pub const EQ: TokenType = "==";
 pub const NEQ: TokenType = "!=";
 
-
 pub const COMMA: TokenType = ",";
 pub const SEMICOLON: TokenType = ";";
 

@@ -67,6 +67,11 @@ impl Parser {
         p.register_infix(token::EQ, Parser::parse_infix_expression);
         p.register_infix(token::NEQ, Parser::parse_infix_expression);
 
+        p.register_prefix(token::TRUE, Parser::parse_boolean);
+        p.register_prefix(token::FALSE, Parser::parse_boolean);
+
+        p.register_prefix(token::LPAREN, Parser::parse_grouped_expression);
+
         p
     }
 
@@ -93,6 +98,7 @@ impl Parser {
         let mut program = ast::Program { statements: vec![] };
         while self.curr_token.token_type != token::EOF {
             let stmt = self.parse_statement();
+            // println!("=> {}", stmt.to_string());
             program.statements.push(stmt);
             self.next_token();
         }
@@ -243,6 +249,26 @@ impl Parser {
         }
     }
 
+    fn parse_boolean(&mut self) -> ast::Expression {
+        let token = self.curr_token.token_type;
+
+        ast::Expression::Bool {
+            token,
+            value: self.curr_token.token_type == token::TRUE,
+        }
+    }
+
+    fn parse_grouped_expression(&mut self) -> ast::Expression {
+        self.next_token();
+        let expression = self.parse_expression(Priority::Lowest);
+        if !self.expect_next(token::RPAREN) {
+            ast::Expression::Undefined
+        }
+        else {
+            expression
+        }
+    }
+
     //////////////////
 
     fn parse_expression(&mut self, priority: Priority) -> ast::Expression {
@@ -250,7 +276,9 @@ impl Parser {
         if let Some(prefix) = prefix {
             let mut left_exp = prefix(self);
 
-            while !self.expect_next(token::SEMICOLON) && priority < self.next_precedence() {
+            while self.next_token.token_type != token::SEMICOLON
+                && priority < self.next_precedence()
+            {
                 let infix = self
                     .infix_parse_funcs
                     .get(self.next_token.token_type)
