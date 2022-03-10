@@ -86,12 +86,12 @@ impl Expression {
                         "if({}) {{ {} }} else {{ {} }}",
                         condition.to_string(),
                         consequence.iter().fold("".to_owned(), |acc, a| acc
-                            + &", ".to_owned()
-                            + &a.to_string())[2..]
+                            + &" ".to_owned()
+                            + &a.to_string())[1..]
                             .to_owned(),
                         alternative.iter().fold("".to_owned(), |acc, a| acc
-                            + &", ".to_owned()
-                            + &a.to_string())[2..]
+                            + &" ".to_owned()
+                            + &a.to_string())[1..]
                             .to_owned()
                     )
                 }
@@ -100,8 +100,8 @@ impl Expression {
                         "if({}) {{ {} }}",
                         condition.to_string(),
                         consequence.iter().fold("".to_owned(), |acc, a| acc
-                            + &", ".to_owned()
-                            + &a.to_string())[2..]
+                            + &" ".to_owned()
+                            + &a.to_string())[1..]
                             .to_owned()
                     )
                 }
