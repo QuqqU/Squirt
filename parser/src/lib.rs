@@ -341,7 +341,7 @@ impl Parser {
         let token = self.curr_token.token_type;
         self.next_token();
 
-        let mut args = self.parse_function_arguments();
+        let args = self.parse_function_arguments();
 
         ast::Expression::FunctionCall {
             token,

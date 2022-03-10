@@ -1,4 +1,4 @@
-use std::{any::Any, fmt::*, iter::Map};
+use std::{any::Any, fmt::*};
 
 use token::TokenType;
 
@@ -83,14 +83,27 @@ impl Expression {
             } => {
                 if !alternative.is_empty() {
                     format!(
-                        "if({}) {:?} else {:?}",
+                        "if({}) {{ {} }} else {{ {} }}",
                         condition.to_string(),
-                        consequence,
-                        alternative
+                        consequence.iter().fold("".to_owned(), |acc, a| acc
+                            + &", ".to_owned()
+                            + &a.to_string())[2..]
+                            .to_owned(),
+                        alternative.iter().fold("".to_owned(), |acc, a| acc
+                            + &", ".to_owned()
+                            + &a.to_string())[2..]
+                            .to_owned()
                     )
                 }
                 else {
-                    format!("if({}) {:?}", condition.to_string(), consequence)
+                    format!(
+                        "if({}) {{ {} }}",
+                        condition.to_string(),
+                        consequence.iter().fold("".to_owned(), |acc, a| acc
+                            + &", ".to_owned()
+                            + &a.to_string())[2..]
+                            .to_owned()
+                    )
                 }
             }
             Self::FunctionLiteral {
@@ -98,7 +111,17 @@ impl Expression {
                 parameters,
                 body,
             } => {
-                format!("fn({:?}) {:?}", parameters, body)
+                format!(
+                    "fn({}) {{ {} }}",
+                    parameters
+                        .iter()
+                        .fold("".to_owned(), |acc, a| acc + &", ".to_owned() + &a.value)[2..]
+                        .to_owned(),
+                    body.iter().fold("".to_owned(), |acc, a| acc
+                        + &", ".to_owned()
+                        + &a.to_string())[2..]
+                        .to_owned()
+                )
             }
             Self::FunctionCall {
                 token: _,
