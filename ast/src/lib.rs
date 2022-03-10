@@ -1,4 +1,4 @@
-use std::{any::Any, fmt::*};
+use std::{any::Any, fmt::*, iter::Map};
 
 use token::TokenType;
 
@@ -42,6 +42,16 @@ pub enum Expression {
         consequence: Vec<Statement>,
         alternative: Vec<Statement>,
     },
+    FunctionLiteral {
+        token:      TokenType,
+        parameters: Vec<Identifier>,
+        body:       Vec<Statement>,
+    },
+    FunctionCall {
+        token: TokenType, // token::LPAREN
+        func:  Box<Expression>,
+        args:  Vec<Expression>,
+    },
 }
 impl Node for Expression {
     fn as_any(&self) -> &dyn Any {
@@ -82,6 +92,27 @@ impl Expression {
                 else {
                     format!("if({}) {:?}", condition.to_string(), consequence)
                 }
+            }
+            Self::FunctionLiteral {
+                token: _,
+                parameters,
+                body,
+            } => {
+                format!("fn({:?}) {:?}", parameters, body)
+            }
+            Self::FunctionCall {
+                token: _,
+                func,
+                args,
+            } => {
+                format!(
+                    "{}({})",
+                    func.to_string(),
+                    args.iter().fold("".to_owned(), |acc, a| acc
+                        + &", ".to_owned()
+                        + &a.to_string())[2..]
+                        .to_owned()
+                )
             }
             _ => format!("Undefined"),
         }

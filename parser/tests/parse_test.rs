@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod parser_tests {
+    use ast::Identifier;
 
     #[test]
     fn test_let() {
@@ -34,7 +35,7 @@ mod parser_tests {
     #[test]
     fn test_return() {
         let input = "
-            return five = 5;
+            return five;
             return ten;
             return 123;
             return add(five, ten);
@@ -329,6 +330,8 @@ mod parser_tests {
             1 + (2 + 3) / 4;
             -(1 + 1);
             !(true == !false);
+            1 + add(1 * 1) + d;
+            add(1, 2, 3 * 4, sub(5 + 6 * 7, 8), 10 * 11);
         "
         .to_string();
 
@@ -349,6 +352,8 @@ mod parser_tests {
             "(1 + ((2 + 3) / 4))",
             "(-(1 + 1))",
             "(!(true == (!false)))",
+            "((1 + add((1 * 1))) + d)",
+            "add(1, 2, (3 * 4), sub((5 + (6 * 7)), 8), (10 * 11))",
         ];
 
         let mut p = parser::Parser::new(lexer::Lexer::new(input));
@@ -498,6 +503,99 @@ mod parser_tests {
                     token: _,
                     expression,
                 } => assert_eq!(*expression, expected),
+                _ => panic!("Not a Expr Statement"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_function_expression() {
+        let input = "
+            fn(x, y, z) { return x + y + z; };
+            fn() { return 0; };
+            fn(x) { return x; };
+        "
+        .to_string();
+
+        let expected = vec![
+            ast::Expression::FunctionLiteral {
+                token:      token::FUNC,
+                parameters: vec![
+                    Identifier {
+                        token: token::IDENT,
+                        value: "x".to_owned(),
+                    },
+                    Identifier {
+                        token: token::IDENT,
+                        value: "y".to_owned(),
+                    },
+                    Identifier {
+                        token: token::IDENT,
+                        value: "z".to_owned(),
+                    },
+                ],
+                body:       vec![ast::Statement::Return {
+                    token: token::RETURN,
+                    value: ast::Expression::Infix {
+                        token:    token::PLUS,
+                        left:     Box::new(ast::Expression::Infix {
+                            token:    token::PLUS,
+                            left:     Box::new(ast::Expression::Ident(ast::Identifier {
+                                token: token::IDENT,
+                                value: "x".to_owned(),
+                            })),
+                            operator: "+".to_owned(),
+                            right:    Box::new(ast::Expression::Ident(ast::Identifier {
+                                token: token::IDENT,
+                                value: "y".to_owned(),
+                            })),
+                        }),
+                        operator: "+".to_owned(),
+                        right:    Box::new(ast::Expression::Ident(ast::Identifier {
+                            token: token::IDENT,
+                            value: "z".to_owned(),
+                        })),
+                    },
+                }],
+            },
+            ast::Expression::FunctionLiteral {
+                token:      token::FUNC,
+                parameters: vec![],
+                body:       vec![ast::Statement::Return {
+                    token: token::RETURN,
+                    value: ast::Expression::IntegerLiteral {
+                        token: token::INT,
+                        value: 0,
+                    },
+                }],
+            },
+            ast::Expression::FunctionLiteral {
+                token:      token::FUNC,
+                parameters: vec![Identifier {
+                    token: token::IDENT,
+                    value: "x".to_owned(),
+                }],
+                body:       vec![ast::Statement::Return {
+                    token: token::RETURN,
+                    value: ast::Expression::Ident(ast::Identifier {
+                        token: token::IDENT,
+                        value: "x".to_owned(),
+                    }),
+                }],
+            },
+        ];
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        assert_eq!(program.statements.len(), expected.len());
+
+        for (i, stmt) in program.statements.iter().enumerate() {
+            match stmt {
+                ast::Statement::Expr {
+                    token: _,
+                    expression,
+                } => assert_eq!(*expression, expected[i]),
                 _ => panic!("Not a Expr Statement"),
             }
         }

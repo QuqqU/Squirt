@@ -29,9 +29,9 @@ fn main() {
         else {
             let program = Parser::new(Lexer::new(input)).parse_program();
             if !program.statements.is_empty() {
-                // println!("{}", program.statements[0].to_string());
-                let e = eval::eval(&program.statements[0]);
-                println!("{}", e.inspect());
+                println!("{}", program.statements[0].to_string());
+                // let e = eval::eval(&program.statements[0]);
+                // println!("{}", e.inspect());
             }
         }
     }

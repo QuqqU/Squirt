@@ -48,6 +48,7 @@ impl Parser {
                 (token::MINUS, Priority::Sum),
                 (token::SLASH, Priority::Product),
                 (token::ASTERISK, Priority::Product),
+                (token::LPAREN, Priority::Call),
             ]),
             prefix_parse_funcs: HashMap::new(),
             infix_parse_funcs:  HashMap::new(),
@@ -72,7 +73,8 @@ impl Parser {
 
         p.register_prefix(token::LPAREN, Parser::parse_grouped_expression);
         p.register_prefix(token::IF, Parser::parse_if_expression);
-
+        p.register_prefix(token::FUNC, Parser::parse_function_literal);
+        p.register_infix(token::LPAREN, Parser::parse_function_call_expression);
         p
     }
 
@@ -308,6 +310,101 @@ impl Parser {
         }
     }
 
+    fn parse_function_literal(&mut self) -> ast::Expression {
+        // fn
+        let token = self.curr_token.token_type;
+
+        // ( params )
+        if !self.expect_next(token::LPAREN) {
+            return ast::Expression::Undefined;
+        }
+        self.next_token();
+
+        let parameters = self.parse_function_parameters();
+
+        // { body }
+        if !self.expect_next(token::LBRACE) {
+            return ast::Expression::Undefined;
+        }
+        self.next_token();
+        let body = self.parse_block_statement();
+
+        ast::Expression::FunctionLiteral {
+            token,
+            parameters,
+            body,
+        }
+    }
+
+    fn parse_function_call_expression(&mut self, func: ast::Expression) -> ast::Expression {
+        // (
+        let token = self.curr_token.token_type;
+        self.next_token();
+
+        let mut args = self.parse_function_arguments();
+
+        ast::Expression::FunctionCall {
+            token,
+            func: Box::new(func),
+            args,
+        }
+    }
+
+    //////////////////
+
+    fn parse_function_parameters(&mut self) -> Vec<ast::Identifier> {
+        let mut params = vec![];
+
+        if self.curr_token.token_type == token::RPAREN {
+            return params;
+        }
+
+        params.push(ast::Identifier {
+            token: token::IDENT,
+            value: self.curr_token.literal.clone(),
+        });
+
+        while self.next_token.token_type == token::COMMA {
+            self.next_token();
+            self.next_token();
+            params.push(ast::Identifier {
+                token: token::IDENT,
+                value: self.curr_token.literal.clone(),
+            });
+        }
+
+        if !self.expect_next(token::RPAREN) {
+            // error
+            return vec![];
+        }
+
+        params
+    }
+
+    fn parse_function_arguments(&mut self) -> Vec<ast::Expression> {
+        let mut args = vec![];
+
+        if self.curr_token.token_type == token::RPAREN {
+            self.next_token();
+            return args;
+        }
+
+        args.push(self.parse_expression(Priority::Lowest));
+
+        while self.next_token.token_type == token::COMMA {
+            self.next_token();
+            self.next_token();
+            args.push(self.parse_expression(Priority::Lowest));
+        }
+
+        if !self.expect_next(token::RPAREN) {
+            // error
+            return vec![];
+        }
+
+        args
+    }
+
     fn parse_block_statement(&mut self) -> Vec<ast::Statement> {
         let mut block_stmt = vec![];
         while self.curr_token.token_type != token::RBRACE
@@ -319,8 +416,6 @@ impl Parser {
         }
         block_stmt
     }
-
-    //////////////////
 
     fn parse_expression(&mut self, priority: Priority) -> ast::Expression {
         let prefix = self.prefix_parse_funcs.get(self.curr_token.token_type);
