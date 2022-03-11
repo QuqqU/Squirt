@@ -26,3 +26,23 @@ impl Object for Integer {
         format!("{}", self.value)
     }
 }
+
+pub type Bool = &'static bool;
+const TRUE: Bool = &true;
+const FALSE: Bool = &false;
+pub fn static_bool_obj(b: bool) -> Bool {
+    if b {
+        TRUE
+    }
+    else {
+        FALSE
+    }
+}
+impl Object for Bool {
+    fn object_type(&self) -> ObjectType {
+        "Bool".to_owned()
+    }
+    fn inspect(&self) -> String {
+        format!("{}", self)
+    }
+}

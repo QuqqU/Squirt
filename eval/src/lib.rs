@@ -20,6 +20,7 @@ pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
             ast::Expression::IntegerLiteral { token: _, value } => {
                 Box::new(object::Integer { value: *value })
             }
+            ast::Expression::Bool { token: _, value } => Box::new(object::static_bool_obj(*value)),
             _ => Box::new(object::Null {}),
         }
     }
