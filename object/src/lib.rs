@@ -14,6 +14,7 @@ impl Object for Null {
         format!("null")
     }
 }
+pub const NULL: Null = Null {};
 
 pub struct Integer {
     pub value: i64,
@@ -28,6 +29,14 @@ impl Object for Integer {
 }
 
 pub type Bool = &'static bool;
+impl Object for Bool {
+    fn object_type(&self) -> ObjectType {
+        "Bool".to_owned()
+    }
+    fn inspect(&self) -> String {
+        format!("{}", self)
+    }
+}
 const TRUE: Bool = &true;
 const FALSE: Bool = &false;
 pub fn static_bool_obj(b: bool) -> Bool {
@@ -36,13 +45,5 @@ pub fn static_bool_obj(b: bool) -> Bool {
     }
     else {
         FALSE
-    }
-}
-impl Object for Bool {
-    fn object_type(&self) -> ObjectType {
-        "Bool".to_owned()
-    }
-    fn inspect(&self) -> String {
-        format!("{}", self)
     }
 }
