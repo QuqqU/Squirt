@@ -2,9 +2,9 @@
 
 # Squirt Programming Language
 
-## Welcome To Squrit.
+## Welcome To Squirt
 
-Squrit is a easy-to-use programming language. It has a simple and clean syntax, make you easy to code more.
+Squirt is a easy-to-use programming language. It has a simple and clean syntax, make you easy to code more.
 
 It is inspired by Not only Python, Javascript and Scala, but also C and C++. Especially, highly affected by Javascript. However, Javascript can express in variety of ways, Squirt which pursue simplicity expresses in one way.
 
@@ -12,9 +12,9 @@ Squirt now only support `i64`, `boolean`. `array`, `hash` is supposed to be supp
 
 Implementation Written in Rust. So, to compile REPL console, you have to use `rustc`.
 
-## Contributing to Squrit
+## Contributing to Squirt
 
-Squrit Programming Language is developed for educational purpose.
+Squirt Programming Language is developed for educational purpose.
 
 Contributions to Squirt are welcomed and encouraged to who learn Compiler! To give clarity of what code is expected, We'll adopt code convention document in near future.
 
@@ -38,9 +38,9 @@ We'll add Documents for Squirt Language Grammar.
 
 So, Play tuned.
 
-## Reference
+## References
 
-Squrit Programming Language is developed for educational purpose. Its development is impossible without the following references.
+Squirt Programming Language is developed for educational purpose. Its development is impossible without the following references.
 
 ### Book
 
