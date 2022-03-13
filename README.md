@@ -53,3 +53,4 @@ Squrit Programming Language is developed for educational purpose. Its developmen
 ### Site
 
 -   [SWC github](https://github.com/swc-project/swc)
+-   [RustPython github](https://github.com/RustPython/RustPython)
