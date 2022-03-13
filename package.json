@@ -1,0 +1,22 @@
+{
+    "name": "squirt",
+    "version": "1.0.0",
+    "description": "# Squirt Programming Language",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/QuqqU/Squirt.git"
+    },
+    "author": "QuqqU",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/QuqqU/Squirt/issues"
+    },
+    "homepage": "https://github.com/QuqqU/Squirt#readme",
+    "dependencies": {
+        "husky": "^7.0.4",
+        "lint-staged": "^12.3.5"
+    }
+}

@@ -1,0 +1,3 @@
+{
+    "*.{rs}": ["cargo +nightly fmt"]
+}
