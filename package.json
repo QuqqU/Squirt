@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "# Squirt Programming Language",
     "scripts": {
-        "prepare": "husky install"
+        "postinstall": "husky install"
     },
     "repository": {
         "type": "git",
@@ -15,8 +15,10 @@
         "url": "https://github.com/QuqqU/Squirt/issues"
     },
     "homepage": "https://github.com/QuqqU/Squirt#readme",
-    "dependencies": {
-        "husky": "^7.0.4",
+    "devDependencies": {
         "lint-staged": "^12.3.5"
+    },
+    "dependencies": {
+        "husky": "^7.0.4"
     }
 }
