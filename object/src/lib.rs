@@ -1,14 +1,22 @@
-pub type ObjectType = String;
+use std::any::Any;
+use std::fmt::Debug;
 
-pub trait Object {
+pub type ObjectType = &'static str;
+
+pub trait Object: Debug {
+    fn as_any(&self) -> &dyn Any;
     fn object_type(&self) -> ObjectType;
     fn inspect(&self) -> String;
 }
 
+#[derive(Debug)]
 pub struct Null {}
 impl Object for Null {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
     fn object_type(&self) -> ObjectType {
-        "Null".to_owned()
+        "Null"
     }
     fn inspect(&self) -> String {
         format!("null")
@@ -16,29 +24,39 @@ impl Object for Null {
 }
 pub const NULL: Null = Null {};
 
+#[derive(Debug)]
 pub struct Integer {
     pub value: i64,
 }
 impl Object for Integer {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
     fn object_type(&self) -> ObjectType {
-        "Integer".to_owned()
+        "Integer"
     }
     fn inspect(&self) -> String {
         format!("{}", self.value)
     }
 }
 
-pub type Bool = &'static bool;
+#[derive(Debug)]
+pub struct Bool {
+    pub value: &'static bool,
+}
 impl Object for Bool {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
     fn object_type(&self) -> ObjectType {
-        "Bool".to_owned()
+        "Bool"
     }
     fn inspect(&self) -> String {
-        format!("{}", self)
+        format!("{}", self.value)
     }
 }
-const TRUE: Bool = &true;
-const FALSE: Bool = &false;
+pub const TRUE: Bool = Bool { value: &true };
+pub const FALSE: Bool = Bool { value: &false };
 pub fn static_bool_obj(b: bool) -> Bool {
     if b {
         TRUE
