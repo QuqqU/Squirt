@@ -1,7 +1,11 @@
 {
     "name": "squirt",
-    "version": "1.0.2",
+    "version": "1.0.4",
     "description": "# Squirt Programming Language",
+    "engines": {
+        "node": "16.5.0",
+        "npm": "7.19.1"
+    },
     "scripts": {
         "postinstall": "husky install"
     },
@@ -16,9 +20,7 @@
     },
     "homepage": "https://github.com/QuqqU/Squirt#readme",
     "devDependencies": {
-        "lint-staged": "^12.3.5"
-    },
-    "dependencies": {
-        "husky": "^7.0.4"
+        "husky": "7.0.4",
+        "lint-staged": "12.3.5"
     }
 }
