@@ -29,6 +29,16 @@ pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
                 let right = eval(&**right);
                 return eval_prefix_expression(operator, right);
             }
+            ast::Expression::Infix {
+                token: _,
+                left,
+                operator,
+                right,
+            } => {
+                let left = eval(&**left);
+                let right = eval(&**right);
+                return eval_infix_expression(operator, left, right);
+            }
             _ => Box::new(object::Null {}),
         }
     }
@@ -88,4 +98,83 @@ fn eval_prefix_minus_expression(right: Box<dyn object::Object>) -> Box<dyn objec
         }
         _ => return Box::new(object::NULL),
     };
+}
+
+fn eval_infix_expression(
+    operator: &str,
+    left: Box<dyn object::Object>,
+    right: Box<dyn object::Object>,
+) -> Box<dyn object::Object> {
+    match operator {
+        "+" | "-" | "*" | "/" | "<" | ">" => {
+            if left.object_type() == "Integer" && right.object_type() == "Integer" {
+                let &left = left.as_any().downcast_ref::<object::Integer>().unwrap();
+                let left = Box::new(left);
+                let &right = right.as_any().downcast_ref::<object::Integer>().unwrap();
+                let right = Box::new(right);
+                eval_integer_infix_expression(operator, left, right)
+            }
+            else {
+                Box::new(object::Null {})
+            }
+        }
+        "==" | "!=" => {
+            if left.object_type() == "Integer" && right.object_type() == "Integer" {
+                let &left = left.as_any().downcast_ref::<object::Integer>().unwrap();
+                let left = Box::new(left);
+                let &right = right.as_any().downcast_ref::<object::Integer>().unwrap();
+                let right = Box::new(right);
+                eval_integer_infix_expression(operator, left, right)
+            }
+            else if left.object_type() == "Bool" && right.object_type() == "Bool" {
+                let &left = left.as_any().downcast_ref::<object::Bool>().unwrap();
+                let left = Box::new(left);
+                let &right = right.as_any().downcast_ref::<object::Bool>().unwrap();
+                let right = Box::new(right);
+                eval_bool_infix_expression(operator, left, right)
+            }
+            else {
+                Box::new(object::Null {})
+            }
+        }
+        _ => Box::new(object::Null {}),
+    }
+}
+
+fn eval_integer_infix_expression(
+    operator: &str,
+    left: Box<object::Integer>,
+    right: Box<object::Integer>,
+) -> Box<dyn object::Object> {
+    match operator {
+        "+" => Box::new(object::Integer {
+            value: left.value + right.value,
+        }),
+        "-" => Box::new(object::Integer {
+            value: left.value - right.value,
+        }),
+        "*" => Box::new(object::Integer {
+            value: left.value * right.value,
+        }),
+        "/" => Box::new(object::Integer {
+            value: left.value / right.value,
+        }),
+        "<" => Box::new(object::static_bool_obj(left.value < right.value)),
+        ">" => Box::new(object::static_bool_obj(left.value > right.value)),
+        "==" => Box::new(object::static_bool_obj(left.value == right.value)),
+        "!=" => Box::new(object::static_bool_obj(left.value != right.value)),
+        _ => Box::new(object::Null {}),
+    }
+}
+
+fn eval_bool_infix_expression(
+    operator: &str,
+    left: Box<object::Bool>,
+    right: Box<object::Bool>,
+) -> Box<dyn object::Object> {
+    match operator {
+        "==" => Box::new(object::static_bool_obj(left.value == right.value)),
+        "!=" => Box::new(object::static_bool_obj(left.value != right.value)),
+        _ => Box::new(object::Null {}),
+    }
 }

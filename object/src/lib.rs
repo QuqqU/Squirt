@@ -24,7 +24,7 @@ impl Object for Null {
 }
 pub const NULL: Null = Null {};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Integer {
     pub value: i64,
 }
@@ -40,7 +40,7 @@ impl Object for Integer {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Bool {
     pub value: &'static bool,
 }
