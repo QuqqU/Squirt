@@ -39,11 +39,44 @@ pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
                 let right = eval(&**right);
                 return eval_infix_expression(operator, left, right);
             }
+            ast::Expression::If {
+                token: _,
+                condition,
+                consequence,
+                alternative,
+            } => {
+                let condition = &**condition;
+                let condition = eval(condition);
+
+                if is_true(condition) {
+                    eval_statements(consequence)
+                }
+                else {
+                    eval_statements(alternative)
+                }
+            }
             _ => Box::new(object::Null {}),
         }
     }
     else {
         Box::new(object::Null {})
+    }
+}
+
+fn is_true(obj: Box<dyn object::Object>) -> bool {
+    match obj.object_type() {
+        "Bool" => *obj.as_any().downcast_ref::<object::Bool>().unwrap().value,
+        "Integer" => {
+            let int_val = obj
+                .as_any()
+                .downcast_ref::<object::Integer>()
+                .unwrap()
+                .value;
+
+            int_val != 0
+        }
+        "Null" => false,
+        _ => true,
     }
 }
 
