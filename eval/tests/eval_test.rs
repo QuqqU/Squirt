@@ -198,10 +198,10 @@ mod eval_tests {
         .to_string();
 
         let expected: Vec<&str> = vec!["10", "null", "10", "20", "20", "10"];
-        
+
         let mut p = parser::Parser::new(lexer::Lexer::new(input));
         let program = p.parse_program();
-      
+
         assert_eq!(program.statements.len(), expected.len());
 
         for (i, stmt) in program.statements.iter().enumerate() {
@@ -231,7 +231,7 @@ mod eval_tests {
         .to_string();
 
         let expected: i64 = 2;
-      
+
         let mut p = parser::Parser::new(lexer::Lexer::new(input));
         let program = p.parse_program();
 
@@ -272,7 +272,7 @@ mod eval_tests {
             .downcast_ref::<object::Integer>()
             .unwrap()
             .value;
-      
+
         assert_eq!(b, expected);
     }
 }
