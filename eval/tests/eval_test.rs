@@ -184,4 +184,61 @@ mod eval_tests {
             assert_eq!(b, expected[i]);
         }
     }
+
+    #[test]
+    fn test_return1() {
+        let input = "
+            1;
+            return 2;
+            3;
+            return 4;
+            5;
+        "
+        .to_string();
+
+        let expected: i64 = 2;
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        let b = eval::eval(&program)
+            .as_any()
+            .downcast_ref::<object::Integer>()
+            .unwrap()
+            .value;
+
+        assert_eq!(b, expected);
+    }
+
+    #[test]
+    fn test_return2() {
+        let input = "
+            1;
+            if(true) {
+                if(false) {
+                    return 2;
+                }
+                3;
+                if(true) {
+                    return 4;
+                }
+                return 5;
+            }
+            return 6;
+        "
+        .to_string();
+
+        let expected: i64 = 4;
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        let b = eval::eval(&program)
+            .as_any()
+            .downcast_ref::<object::Integer>()
+            .unwrap()
+            .value;
+
+        assert_eq!(b, expected);
+    }
 }
