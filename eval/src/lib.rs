@@ -4,7 +4,7 @@ use object;
 pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
     let nd = node.as_any();
     if let Some(program) = nd.downcast_ref::<ast::Program>() {
-        eval_statements(&program.statements)
+        eval_program(&program.statements)
     }
     else if let Some(statement) = nd.downcast_ref::<ast::Statement>() {
         match statement {
@@ -12,6 +12,10 @@ pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
                 token: _,
                 expression,
             } => eval(expression),
+            ast::Statement::Return { token: _, value } => {
+                let value = eval(value);
+                Box::new(object::ReturnValue { value })
+            }
             _ => Box::new(object::Null {}),
         }
     }
@@ -80,11 +84,32 @@ fn is_true(obj: Box<dyn object::Object>) -> bool {
     }
 }
 
+fn eval_program(stmts: &Vec<ast::Statement>) -> Box<dyn object::Object> {
+    let mut rlt: Box<dyn object::Object> = Box::new(object::Null {});
+    for stmt in stmts {
+        rlt = eval(stmt);
+        // println!("{} {}", stmt.to_string(), rlt.inspect());
+        if rlt.object_type() == "ReturnValue" {
+            let rlt = rlt
+                .as_any()
+                .downcast_ref::<object::ReturnValue>()
+                .unwrap()
+                .value
+                .clone();
+            return rlt;
+        }
+    }
+    rlt
+}
+
 fn eval_statements(stmts: &Vec<ast::Statement>) -> Box<dyn object::Object> {
     let mut rlt: Box<dyn object::Object> = Box::new(object::Null {});
     for stmt in stmts {
         rlt = eval(stmt);
         // println!("{} {}", stmt.to_string(), rlt.inspect());
+        if rlt.object_type() == "ReturnValue" {
+            return rlt;
+        }
     }
     rlt
 }
