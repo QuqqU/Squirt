@@ -184,4 +184,39 @@ mod eval_tests {
             assert_eq!(b, expected[i]);
         }
     }
+
+    #[test]
+    fn test_if_expression() {
+        let input = "
+            if(true) { 10; }
+            if(false) { 10; }
+            if(true) { 10; } else { 20; }
+            if(false) { 10; } else { 20; }
+            if(0) { 10; } else { 20; }
+            if(1) { 10; } else { 20; }
+        "
+        .to_string();
+
+        let expected: Vec<&str> = vec!["10", "null", "10", "20", "20", "10"];
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        assert_eq!(program.statements.len(), expected.len());
+
+        for (i, stmt) in program.statements.iter().enumerate() {
+            let b = eval::eval(stmt);
+
+            let b = match b.as_any().downcast_ref::<object::Integer>() {
+                Some(v) => v.value.to_string(),
+                None => match b.as_any().downcast_ref::<object::Null>() {
+                    Some(_) => "null",
+                    None => panic!("Neither i32 or null"),
+                }
+                .to_string(),
+            };
+
+            assert_eq!(b, expected[i]);
+        }
+    }
 }
