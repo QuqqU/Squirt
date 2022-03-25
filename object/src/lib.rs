@@ -3,13 +3,31 @@ use std::fmt::Debug;
 
 pub type ObjectType = &'static str;
 
-pub trait Object: Debug {
+pub trait Object: Debug + BoxClone {
     fn as_any(&self) -> &dyn Any;
     fn object_type(&self) -> ObjectType;
     fn inspect(&self) -> String;
 }
 
-#[derive(Debug)]
+//https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object
+pub trait BoxClone {
+    fn clone_box(&self) -> Box<dyn Object>;
+}
+impl<T> BoxClone for T
+where
+    T: 'static + Object + Clone,
+{
+    fn clone_box(&self) -> Box<dyn Object> {
+        Box::new(self.clone())
+    }
+}
+impl Clone for Box<dyn Object> {
+    fn clone(&self) -> Box<dyn Object> {
+        self.clone_box()
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Null {}
 impl Object for Null {
     fn as_any(&self) -> &dyn Any {
@@ -63,5 +81,21 @@ pub fn static_bool_obj(b: bool) -> Bool {
     }
     else {
         FALSE
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ReturnValue {
+    pub value: Box<dyn Object>,
+}
+impl Object for ReturnValue {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn object_type(&self) -> ObjectType {
+        "ReturnValue"
+    }
+    fn inspect(&self) -> String {
+        format!("{}", self.value.inspect())
     }
 }
