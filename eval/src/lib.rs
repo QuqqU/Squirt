@@ -1,6 +1,3 @@
-use ast;
-use object;
-
 pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
     let nd = node.as_any();
     if let Some(program) = nd.downcast_ref::<ast::Program>() {
@@ -14,9 +11,12 @@ pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
             } => eval(expression),
             ast::Statement::Return { token: _, value } => {
                 let value = eval(value);
+                if is_error(&value) {
+                    return value;
+                }
                 Box::new(object::ReturnValue { value })
             }
-            _ => Box::new(object::Null {}),
+            _ => Box::new(object::Null {}), // TODO : how to handle?
         }
     }
     else if let Some(expression) = nd.downcast_ref::<ast::Expression>() {
@@ -31,6 +31,9 @@ pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
                 right,
             } => {
                 let right = eval(&**right);
+                if is_error(&right) {
+                    return right;
+                }
                 return eval_prefix_expression(operator, right);
             }
             ast::Expression::Infix {
@@ -40,7 +43,13 @@ pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
                 right,
             } => {
                 let left = eval(&**left);
+                if is_error(&left) {
+                    return left;
+                }
                 let right = eval(&**right);
+                if is_error(&right) {
+                    return right;
+                }
                 return eval_infix_expression(operator, left, right);
             }
             ast::Expression::If {
@@ -51,23 +60,26 @@ pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
             } => {
                 let condition = &**condition;
                 let condition = eval(condition);
+                if is_error(&condition) {
+                    return condition;
+                }
 
-                if is_true(condition) {
+                if is_true(&condition) {
                     eval_statements(consequence)
                 }
                 else {
                     eval_statements(alternative)
                 }
             }
-            _ => Box::new(object::Null {}),
+            _ => Box::new(object::Null {}), // TODO : how to handle?
         }
     }
     else {
-        Box::new(object::Null {})
+        Box::new(object::Null {}) // TODO : how to handle?
     }
 }
 
-fn is_true(obj: Box<dyn object::Object>) -> bool {
+fn is_true(obj: &Box<dyn object::Object>) -> bool {
     match obj.object_type() {
         "Bool" => *obj.as_any().downcast_ref::<object::Bool>().unwrap().value,
         "Integer" => {
@@ -84,6 +96,17 @@ fn is_true(obj: Box<dyn object::Object>) -> bool {
     }
 }
 
+fn is_error(obj: &Box<dyn object::Object>) -> bool {
+    obj.object_type() == "Error"
+}
+
+// issue #20
+// formatted string & variable argument using macro
+// format_argument! may helpful
+fn new_error(value: String) -> Box<object::Error> {
+    Box::new(object::Error { value })
+}
+
 fn eval_program(stmts: &Vec<ast::Statement>) -> Box<dyn object::Object> {
     let mut rlt: Box<dyn object::Object> = Box::new(object::Null {});
     for stmt in stmts {
@@ -98,6 +121,9 @@ fn eval_program(stmts: &Vec<ast::Statement>) -> Box<dyn object::Object> {
                 .clone();
             return rlt;
         }
+        else if rlt.object_type() == "Error" {
+            return rlt;
+        }
     }
     rlt
 }
@@ -108,6 +134,9 @@ fn eval_statements(stmts: &Vec<ast::Statement>) -> Box<dyn object::Object> {
         rlt = eval(stmt);
         // println!("{} {}", stmt.to_string(), rlt.inspect());
         if rlt.object_type() == "ReturnValue" {
+            return rlt;
+        }
+        else if rlt.object_type() == "Error" {
             return rlt;
         }
     }
@@ -121,7 +150,7 @@ fn eval_prefix_expression(
     match operator {
         "!" => eval_prefix_bang_expression(right),
         "-" => eval_prefix_minus_expression(right),
-        _ => Box::new(object::Null {}),
+        _ => new_error("Never Occur".to_owned()),
     }
 }
 
@@ -154,7 +183,10 @@ fn eval_prefix_minus_expression(right: Box<dyn object::Object>) -> Box<dyn objec
                 .value;
             return Box::new(object::Integer { value: -right });
         }
-        _ => return Box::new(object::NULL),
+        _ => {
+            let s = format!("Unknown Operator: -{}", &right.object_type());
+            return new_error(s);
+        }
     };
 }
 
@@ -173,7 +205,13 @@ fn eval_infix_expression(
                 eval_integer_infix_expression(operator, left, right)
             }
             else {
-                Box::new(object::Null {})
+                let s = format!(
+                    "Type Mismatched: {} {} {}",
+                    &left.object_type(),
+                    operator,
+                    &right.object_type()
+                );
+                new_error(s)
             }
         }
         "==" | "!=" => {
@@ -192,10 +230,16 @@ fn eval_infix_expression(
                 eval_bool_infix_expression(operator, left, right)
             }
             else {
-                Box::new(object::Null {})
+                let s = format!(
+                    "Type Mismatched: {} {} {}",
+                    &left.object_type(),
+                    operator,
+                    &right.object_type()
+                );
+                new_error(s)
             }
         }
-        _ => Box::new(object::Null {}),
+        _ => new_error("Never Occur".to_owned()),
     }
 }
 
@@ -221,7 +265,7 @@ fn eval_integer_infix_expression(
         ">" => Box::new(object::static_bool_obj(left.value > right.value)),
         "==" => Box::new(object::static_bool_obj(left.value == right.value)),
         "!=" => Box::new(object::static_bool_obj(left.value != right.value)),
-        _ => Box::new(object::Null {}),
+        _ => new_error("Never Occur".to_owned()),
     }
 }
 
@@ -233,6 +277,6 @@ fn eval_bool_infix_expression(
     match operator {
         "==" => Box::new(object::static_bool_obj(left.value == right.value)),
         "!=" => Box::new(object::static_bool_obj(left.value != right.value)),
-        _ => Box::new(object::Null {}),
+        _ => new_error("Never Occur".to_owned()),
     }
 }

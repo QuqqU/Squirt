@@ -275,4 +275,32 @@ mod eval_tests {
 
         assert_eq!(b, expected);
     }
+
+    #[test]
+    fn test_error() {
+        let input = "
+            5 + true;
+            -true;
+            true * false;
+            if (true) { false / 1; }
+        "
+        .to_string();
+
+        let expected: Vec<&str> = vec![
+            "Type Mismatched: Integer + Bool",
+            "Unknown Operator: -Bool",
+            "Type Mismatched: Bool * Bool",
+            "Type Mismatched: Bool / Integer",
+        ];
+
+        let mut p = parser::Parser::new(lexer::Lexer::new(input));
+        let program = p.parse_program();
+
+        assert_eq!(program.statements.len(), expected.len());
+
+        for (i, stmt) in program.statements.iter().enumerate() {
+            let b = eval::eval(stmt);
+            assert_eq!(b.inspect(), expected[i]);
+        }
+    }
 }
