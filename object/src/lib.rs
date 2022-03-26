@@ -28,6 +28,20 @@ impl Clone for Box<dyn Object> {
 }
 
 #[derive(Debug, Clone)]
+pub struct Never {}
+impl Object for Never {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn object_type(&self) -> ObjectType {
+        "Never"
+    }
+    fn inspect(&self) -> String {
+        format!("never_inspected")
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Null {}
 impl Object for Null {
     fn as_any(&self) -> &dyn Any {
@@ -97,5 +111,21 @@ impl Object for ReturnValue {
     }
     fn inspect(&self) -> String {
         format!("{}", self.value.inspect())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Error {
+    pub value: String,
+}
+impl Object for Error {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn object_type(&self) -> ObjectType {
+        "Error"
+    }
+    fn inspect(&self) -> String {
+        format!("{}", self.value)
     }
 }
