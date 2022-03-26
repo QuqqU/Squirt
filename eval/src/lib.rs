@@ -1,20 +1,36 @@
-pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
+mod environment;
+
+pub use environment::Env;
+
+pub fn eval(node: &dyn ast::Node, env: &mut environment::Env) -> Box<dyn object::Object> {
     let nd = node.as_any();
     if let Some(program) = nd.downcast_ref::<ast::Program>() {
-        eval_program(&program.statements)
+        eval_program(&program.statements, env)
     }
     else if let Some(statement) = nd.downcast_ref::<ast::Statement>() {
         match statement {
             ast::Statement::Expr {
                 token: _,
                 expression,
-            } => eval(expression),
+            } => eval(expression, env),
             ast::Statement::Return { token: _, value } => {
-                let value = eval(value);
+                let value = eval(value, env);
                 if is_error(&value) {
                     return value;
                 }
                 Box::new(object::ReturnValue { value })
+            }
+            ast::Statement::Let {
+                token: _,
+                name,
+                value,
+            } => {
+                let value = eval(value, env);
+                if is_error(&value) {
+                    return value;
+                }
+                env.set(name.value.clone(), value.clone());
+                value
             }
             _ => Box::new(object::Null {}), // TODO : how to handle?
         }
@@ -30,7 +46,7 @@ pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
                 operator,
                 right,
             } => {
-                let right = eval(&**right);
+                let right = eval(&**right, env);
                 if is_error(&right) {
                     return right;
                 }
@@ -42,11 +58,11 @@ pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
                 operator,
                 right,
             } => {
-                let left = eval(&**left);
+                let left = eval(&**left, env);
                 if is_error(&left) {
                     return left;
                 }
-                let right = eval(&**right);
+                let right = eval(&**right, env);
                 if is_error(&right) {
                     return right;
                 }
@@ -59,18 +75,19 @@ pub fn eval(node: &dyn ast::Node) -> Box<dyn object::Object> {
                 alternative,
             } => {
                 let condition = &**condition;
-                let condition = eval(condition);
+                let condition = eval(condition, env);
                 if is_error(&condition) {
                     return condition;
                 }
 
                 if is_true(&condition) {
-                    eval_statements(consequence)
+                    eval_statements(consequence, env)
                 }
                 else {
-                    eval_statements(alternative)
+                    eval_statements(alternative, env)
                 }
             }
+            ast::Expression::Ident(ast::Identifier { token: _, value }) => eval_ident(value, env),
             _ => Box::new(object::Null {}), // TODO : how to handle?
         }
     }
@@ -107,10 +124,13 @@ fn new_error(value: String) -> Box<object::Error> {
     Box::new(object::Error { value })
 }
 
-fn eval_program(stmts: &Vec<ast::Statement>) -> Box<dyn object::Object> {
+fn eval_program(
+    stmts: &Vec<ast::Statement>,
+    env: &mut environment::Env,
+) -> Box<dyn object::Object> {
     let mut rlt: Box<dyn object::Object> = Box::new(object::Null {});
     for stmt in stmts {
-        rlt = eval(stmt);
+        rlt = eval(stmt, env);
         // println!("{} {}", stmt.to_string(), rlt.inspect());
         if rlt.object_type() == "ReturnValue" {
             let rlt = rlt
@@ -128,10 +148,13 @@ fn eval_program(stmts: &Vec<ast::Statement>) -> Box<dyn object::Object> {
     rlt
 }
 
-fn eval_statements(stmts: &Vec<ast::Statement>) -> Box<dyn object::Object> {
+fn eval_statements(
+    stmts: &Vec<ast::Statement>,
+    env: &mut environment::Env,
+) -> Box<dyn object::Object> {
     let mut rlt: Box<dyn object::Object> = Box::new(object::Null {});
     for stmt in stmts {
-        rlt = eval(stmt);
+        rlt = eval(stmt, env);
         // println!("{} {}", stmt.to_string(), rlt.inspect());
         if rlt.object_type() == "ReturnValue" {
             return rlt;
@@ -278,5 +301,12 @@ fn eval_bool_infix_expression(
         "==" => Box::new(object::static_bool_obj(left.value == right.value)),
         "!=" => Box::new(object::static_bool_obj(left.value != right.value)),
         _ => new_error("Never Occur".to_owned()),
+    }
+}
+
+fn eval_ident(name: &String, env: &environment::Env) -> Box<dyn object::Object> {
+    match env.get(name) {
+        Some(v) => v.clone(),
+        None => new_error(format!("Ident not found: {}", name)),
     }
 }
