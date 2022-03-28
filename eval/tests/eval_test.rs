@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod eval_tests {
+    use eval;
 
     #[test]
     fn test_let() {
@@ -230,6 +231,7 @@ mod eval_tests {
         }
     }
 
+    #[test]
     fn test_return1() {
         let input = "
             1;
@@ -314,6 +316,42 @@ mod eval_tests {
             let mut env = eval::Env::new();
             let b = eval::eval(stmt, &mut env);
             assert_eq!(b.inspect(), expected[i]);
+        }
+    }
+
+    #[test]
+    fn test_binding() {
+        let inputs: Vec<&str> = vec![
+            "
+            let a = 5;
+            a;
+        ",
+            "
+            let a = 5 * 5;
+            a;
+        ",
+            "
+            let a = 1;
+            let b = a;
+            b;
+        ",
+        ];
+
+        let expected: Vec<i64> = vec![5, 25, 1];
+
+        for (i, input) in inputs.iter().enumerate() {
+            let mut p = parser::Parser::new(lexer::Lexer::new(input.to_string()));
+            let program = p.parse_program();
+
+            let mut env = eval::Env::new();
+            let rlt = eval::eval(&program, &mut env);
+            let rlt = rlt
+                .as_any()
+                .downcast_ref::<object::Integer>()
+                .unwrap()
+                .value;
+
+            assert_eq!(rlt, expected[i]);
         }
     }
 }
