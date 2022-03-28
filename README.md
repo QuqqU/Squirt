@@ -36,7 +36,7 @@ Make sure you are using the correct environment for `rustc`.
 
 We'll add Documents for Squirt Language Grammar.
 
-So, Play tuned.
+So, Stay tuned.
 
 ## References
 
