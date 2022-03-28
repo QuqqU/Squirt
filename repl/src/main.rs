@@ -1,3 +1,4 @@
+use eval::Env;
 use lexer::Lexer;
 use parser::Parser;
 use std::io::Write;
@@ -15,6 +16,7 @@ fn prompt(name: &str) -> String {
 }
 
 fn main() {
+    let mut env = eval::Env::new();
     loop {
         let input = prompt("> ");
         if input == "now" {
@@ -30,7 +32,7 @@ fn main() {
             let program = Parser::new(Lexer::new(input)).parse_program();
             if !program.statements.is_empty() {
                 //println!("{}", program.statements[0].to_string());
-                let e = eval::eval(&program);
+                let e = eval::eval(&program, &mut env);
                 println!("value : {}", e.inspect());
             }
         }
