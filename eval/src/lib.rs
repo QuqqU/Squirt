@@ -28,6 +28,7 @@ pub fn eval(node: &dyn ast::Node, env: &mut Env) -> Box<dyn object::Object> {
                     return value;
                 }
                 env.set(name.value.clone(), value.clone());
+                // println!("==> {:?}", env.get(&name.value.clone()));
                 value
             }
             _ => Box::new(object::Null {}), // TODO : how to handle?
@@ -86,6 +87,38 @@ pub fn eval(node: &dyn ast::Node, env: &mut Env) -> Box<dyn object::Object> {
                 }
             }
             ast::Expression::Ident(ast::Identifier { token: _, value }) => eval_ident(value, env),
+            ast::Expression::FunctionLiteral {
+                token: _,
+                parameters,
+                body,
+            } => Box::new(object::Function {
+                parameters: parameters.to_vec(),
+                body:       body.to_vec(),
+                env:        env.clone(), // todo: need to be ref / it is very high cost #issue 24
+            }),
+            ast::Expression::FunctionCall {
+                token: _,
+                func,
+                args,
+            } => {
+                println!("==> {:?} {:?}", func, args);
+                let func = eval(&**func, env);
+                if is_error(&func) {
+                    return func;
+                }
+                let func = Box::new(match func.as_any().downcast_ref::<object::Function>() {
+                    Some(v) => v.clone(),
+                    None => return new_error("Not a func".to_string()),
+                });
+                // above, more fancy? is there way?
+
+                let args = eval_expressions(args, env);
+                if args.len() == 1 && is_error(args.first().unwrap()) {
+                    return args[0].clone(); // wanna change it to more safe
+                }
+
+                put_args_in_function(func, args)
+            }
             _ => Box::new(object::Null {}), // TODO : how to handle?
         }
     }
@@ -301,4 +334,35 @@ fn eval_ident(name: &String, env: &Env) -> Box<dyn object::Object> {
         Some(v) => v.clone(),
         None => new_error(format!("Ident not found: {}", name)),
     }
+}
+
+fn eval_expressions(
+    expressions: &Vec<ast::Expression>,
+    env: &mut Env,
+) -> Vec<Box<dyn object::Object>> {
+    let mut v = vec![];
+    for exp in expressions {
+        let e = eval(exp, env);
+        if is_error(&e) {
+            return vec![e];
+        }
+        v.push(e);
+    }
+    v
+}
+
+fn put_args_in_function(
+    func: Box<object::Function>,
+    args: Vec<Box<dyn object::Object>>,
+) -> Box<dyn object::Object> {
+    let mut closure = make_func_env(&func, args);
+    eval_program(&func.body, &mut closure)
+}
+
+fn make_func_env(func: &Box<object::Function>, args: Vec<Box<dyn object::Object>>) -> Env {
+    let mut closure = Env::wrap_env(Box::new(func.env.clone())); // it is also 'clone'
+    for (param, arg) in func.parameters.iter().zip(args) {
+        closure.set(param.value.clone(), arg)
+    }
+    closure
 }

@@ -48,8 +48,8 @@ pub enum Expression {
         body:       Vec<Statement>,
     },
     FunctionCall {
-        token: TokenType, // token::LPAREN
-        func:  Box<Expression>,
+        token: TokenType,       // token::LPAREN
+        func:  Box<Expression>, // functionliteral or ident
         args:  Vec<Expression>,
     },
 }

@@ -7,7 +7,7 @@ use std::fmt::Debug;
 
 pub type ObjectType = &'static str;
 
-pub trait Object: BoxClone {
+pub trait Object: Debug + BoxClone {
     fn as_any(&self) -> &dyn Any;
     fn object_type(&self) -> ObjectType;
     fn inspect(&self) -> String;
@@ -102,7 +102,7 @@ pub fn static_bool_obj(b: bool) -> Bool {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ReturnValue {
     pub value: Box<dyn Object>,
 }
@@ -118,7 +118,7 @@ impl Object for ReturnValue {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Error {
     pub value: String,
 }
@@ -134,7 +134,7 @@ impl Object for Error {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Function {
     pub parameters: Vec<ast::Identifier>,
     pub body:       Vec<ast::Statement>,
