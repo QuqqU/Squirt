@@ -1,5 +1,5 @@
-use eval::Env;
 use lexer::Lexer;
+use object::Env;
 use parser::Parser;
 use std::io::Write;
 use std::time::SystemTime;
@@ -16,7 +16,7 @@ fn prompt(name: &str) -> String {
 }
 
 fn main() {
-    let mut env = eval::Env::new();
+    let mut env = Env::new();
     loop {
         let input = prompt("> ");
         if input == "now" {

@@ -1,8 +1,6 @@
-mod environment;
+use object::Env;
 
-pub use environment::Env;
-
-pub fn eval(node: &dyn ast::Node, env: &mut environment::Env) -> Box<dyn object::Object> {
+pub fn eval(node: &dyn ast::Node, env: &mut Env) -> Box<dyn object::Object> {
     let nd = node.as_any();
     if let Some(program) = nd.downcast_ref::<ast::Program>() {
         eval_program(&program.statements, env)
@@ -124,10 +122,7 @@ fn new_error(value: String) -> Box<object::Error> {
     Box::new(object::Error { value })
 }
 
-fn eval_program(
-    stmts: &Vec<ast::Statement>,
-    env: &mut environment::Env,
-) -> Box<dyn object::Object> {
+fn eval_program(stmts: &Vec<ast::Statement>, env: &mut Env) -> Box<dyn object::Object> {
     let mut rlt: Box<dyn object::Object> = Box::new(object::Null {});
     for stmt in stmts {
         rlt = eval(stmt, env);
@@ -148,10 +143,7 @@ fn eval_program(
     rlt
 }
 
-fn eval_statements(
-    stmts: &Vec<ast::Statement>,
-    env: &mut environment::Env,
-) -> Box<dyn object::Object> {
+fn eval_statements(stmts: &Vec<ast::Statement>, env: &mut Env) -> Box<dyn object::Object> {
     let mut rlt: Box<dyn object::Object> = Box::new(object::Null {});
     for stmt in stmts {
         rlt = eval(stmt, env);
@@ -304,7 +296,7 @@ fn eval_bool_infix_expression(
     }
 }
 
-fn eval_ident(name: &String, env: &environment::Env) -> Box<dyn object::Object> {
+fn eval_ident(name: &String, env: &Env) -> Box<dyn object::Object> {
     match env.get(name) {
         Some(v) => v.clone(),
         None => new_error(format!("Ident not found: {}", name)),

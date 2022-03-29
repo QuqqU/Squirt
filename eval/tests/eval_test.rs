@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod eval_tests {
-    use eval;
+    use object::Env;
 
     #[test]
     fn test_let() {
@@ -23,7 +23,7 @@ mod eval_tests {
         assert_eq!(program.statements.len(), expected.len());
 
         for (i, stmt) in program.statements.iter().enumerate() {
-            let mut env = eval::Env::new();
+            let mut env = Env::new();
             assert_eq!(
                 eval::eval(stmt, &mut env).inspect(),
                 expected[i].value.to_string()
@@ -60,7 +60,7 @@ mod eval_tests {
         assert_eq!(program.statements.len(), expected.len());
 
         for (i, stmt) in program.statements.iter().enumerate() {
-            let mut env = eval::Env::new();
+            let mut env = Env::new();
             let &b = eval::eval(stmt, &mut env)
                 .as_any()
                 .downcast_ref::<object::Bool>()
@@ -89,7 +89,7 @@ mod eval_tests {
         assert_eq!(program.statements.len(), expected.len());
 
         for (i, stmt) in program.statements.iter().enumerate() {
-            let mut env = eval::Env::new();
+            let mut env = Env::new();
             let b = eval::eval(stmt, &mut env)
                 .as_any()
                 .downcast_ref::<object::Integer>()
@@ -120,7 +120,7 @@ mod eval_tests {
         assert_eq!(program.statements.len(), expected.len());
 
         for (i, stmt) in program.statements.iter().enumerate() {
-            let mut env = eval::Env::new();
+            let mut env = Env::new();
             let b = eval::eval(stmt, &mut env)
                 .as_any()
                 .downcast_ref::<object::Integer>()
@@ -153,7 +153,7 @@ mod eval_tests {
         assert_eq!(program.statements.len(), expected.len());
 
         for (i, stmt) in program.statements.iter().enumerate() {
-            let mut env = eval::Env::new();
+            let mut env = Env::new();
             let &b = eval::eval(stmt, &mut env)
                 .as_any()
                 .downcast_ref::<object::Bool>()
@@ -184,7 +184,7 @@ mod eval_tests {
         assert_eq!(program.statements.len(), expected.len());
 
         for (i, stmt) in program.statements.iter().enumerate() {
-            let mut env = eval::Env::new();
+            let mut env = Env::new();
             let &b = eval::eval(stmt, &mut env)
                 .as_any()
                 .downcast_ref::<object::Bool>()
@@ -215,7 +215,7 @@ mod eval_tests {
         assert_eq!(program.statements.len(), expected.len());
 
         for (i, stmt) in program.statements.iter().enumerate() {
-            let mut env = eval::Env::new();
+            let mut env = Env::new();
             let b = eval::eval(stmt, &mut env);
 
             let b = match b.as_any().downcast_ref::<object::Integer>() {
@@ -247,7 +247,7 @@ mod eval_tests {
         let mut p = parser::Parser::new(lexer::Lexer::new(input));
         let program = p.parse_program();
 
-        let mut env = eval::Env::new();
+        let mut env = Env::new();
         let b = eval::eval(&program, &mut env)
             .as_any()
             .downcast_ref::<object::Integer>()
@@ -280,7 +280,7 @@ mod eval_tests {
         let mut p = parser::Parser::new(lexer::Lexer::new(input));
         let program = p.parse_program();
 
-        let mut env = eval::Env::new();
+        let mut env = Env::new();
         let b = eval::eval(&program, &mut env)
             .as_any()
             .downcast_ref::<object::Integer>()
@@ -313,7 +313,7 @@ mod eval_tests {
         assert_eq!(program.statements.len(), expected.len());
 
         for (i, stmt) in program.statements.iter().enumerate() {
-            let mut env = eval::Env::new();
+            let mut env = Env::new();
             let b = eval::eval(stmt, &mut env);
             assert_eq!(b.inspect(), expected[i]);
         }
@@ -343,7 +343,7 @@ mod eval_tests {
             let mut p = parser::Parser::new(lexer::Lexer::new(input.to_string()));
             let program = p.parse_program();
 
-            let mut env = eval::Env::new();
+            let mut env = Env::new();
             let rlt = eval::eval(&program, &mut env);
             let rlt = rlt
                 .as_any()
