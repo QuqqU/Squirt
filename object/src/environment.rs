@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub struct Env {
     map: HashMap<String, Box<dyn super::Object>>,
 }

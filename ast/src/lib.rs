@@ -2,7 +2,7 @@ use std::{any::Any, fmt::*};
 
 use token::TokenType;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Identifier {
     pub token: TokenType, // token::IDENT
     pub value: String,
@@ -13,7 +13,7 @@ pub trait Node {
     fn as_any(&self) -> &dyn Any;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Undefined,
     Ident(Identifier),
@@ -142,7 +142,7 @@ impl Expression {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Let {
         token: TokenType, // token::LET
@@ -180,7 +180,7 @@ impl Statement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }

@@ -1,12 +1,13 @@
 mod environment;
 pub use environment::*;
 
+use ast;
 use std::any::Any;
 use std::fmt::Debug;
 
 pub type ObjectType = &'static str;
 
-pub trait Object: Debug + BoxClone {
+pub trait Object: BoxClone {
     fn as_any(&self) -> &dyn Any;
     fn object_type(&self) -> ObjectType;
     fn inspect(&self) -> String;
@@ -101,7 +102,7 @@ pub fn static_bool_obj(b: bool) -> Bool {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ReturnValue {
     pub value: Box<dyn Object>,
 }
@@ -117,7 +118,7 @@ impl Object for ReturnValue {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Error {
     pub value: String,
 }
@@ -130,5 +131,23 @@ impl Object for Error {
     }
     fn inspect(&self) -> String {
         format!("{}", self.value)
+    }
+}
+
+#[derive(Clone)]
+pub struct Function {
+    pub parameters: Vec<ast::Identifier>,
+    pub body:       Vec<ast::Statement>,
+    pub env:        Env,
+}
+impl Object for Function {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn object_type(&self) -> ObjectType {
+        "Funciton"
+    }
+    fn inspect(&self) -> String {
+        format!("fn() {{}}") // todo
     }
 }
