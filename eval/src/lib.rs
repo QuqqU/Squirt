@@ -1,6 +1,8 @@
+use std::{cell::RefCell, rc::Rc};
+
 use object::Env;
 
-pub fn eval(node: &dyn ast::Node, env: &mut Env) -> Box<dyn object::Object> {
+pub fn eval(node: &dyn ast::Node, env: &Rc<RefCell<Env>>) -> Box<dyn object::Object> {
     let nd = node.as_any();
     if let Some(program) = nd.downcast_ref::<ast::Program>() {
         eval_program(&program.statements, env)
@@ -27,7 +29,7 @@ pub fn eval(node: &dyn ast::Node, env: &mut Env) -> Box<dyn object::Object> {
                 if is_error(&value) {
                     return value;
                 }
-                env.set(name.value.clone(), value.clone());
+                env.borrow_mut().set(name.value.clone(), value.clone());
                 // println!("==> {:?}", env.get(&name.value.clone()));
                 value
             }
@@ -94,15 +96,15 @@ pub fn eval(node: &dyn ast::Node, env: &mut Env) -> Box<dyn object::Object> {
             } => Box::new(object::Function {
                 parameters: parameters.to_vec(),
                 body:       body.to_vec(),
-                env:        env.clone(), // todo: need to be ref / it is very high cost #issue 24
+                env:        Rc::clone(env), // todo: need to be ref / it is very high cost #issue 24
             }),
             ast::Expression::FunctionCall {
                 token: _,
                 func,
                 args,
             } => {
-                println!("==> {:?} {:?}", func, args);
                 let func = eval(&**func, env);
+
                 if is_error(&func) {
                     return func;
                 }
@@ -155,11 +157,10 @@ fn new_error(value: String) -> Box<object::Error> {
     Box::new(object::Error { value })
 }
 
-fn eval_program(stmts: &Vec<ast::Statement>, env: &mut Env) -> Box<dyn object::Object> {
+fn eval_program(stmts: &Vec<ast::Statement>, env: &Rc<RefCell<Env>>) -> Box<dyn object::Object> {
     let mut rlt: Box<dyn object::Object> = Box::new(object::Null {});
     for stmt in stmts {
         rlt = eval(stmt, env);
-        // println!("{} {}", stmt.to_string(), rlt.inspect());
         if rlt.object_type() == "ReturnValue" {
             let rlt = rlt
                 .as_any()
@@ -176,7 +177,7 @@ fn eval_program(stmts: &Vec<ast::Statement>, env: &mut Env) -> Box<dyn object::O
     rlt
 }
 
-fn eval_statements(stmts: &Vec<ast::Statement>, env: &mut Env) -> Box<dyn object::Object> {
+fn eval_statements(stmts: &Vec<ast::Statement>, env: &Rc<RefCell<Env>>) -> Box<dyn object::Object> {
     let mut rlt: Box<dyn object::Object> = Box::new(object::Null {});
     for stmt in stmts {
         rlt = eval(stmt, env);
@@ -329,8 +330,8 @@ fn eval_bool_infix_expression(
     }
 }
 
-fn eval_ident(name: &String, env: &Env) -> Box<dyn object::Object> {
-    match env.get(name) {
+fn eval_ident(name: &String, env: &Rc<RefCell<Env>>) -> Box<dyn object::Object> {
+    match env.borrow().get(name) {
         Some(v) => v.clone(),
         None => new_error(format!("Ident not found: {}", name)),
     }
@@ -338,7 +339,7 @@ fn eval_ident(name: &String, env: &Env) -> Box<dyn object::Object> {
 
 fn eval_expressions(
     expressions: &Vec<ast::Expression>,
-    env: &mut Env,
+    env: &Rc<RefCell<Env>>,
 ) -> Vec<Box<dyn object::Object>> {
     let mut v = vec![];
     for exp in expressions {
@@ -355,14 +356,17 @@ fn put_args_in_function(
     func: Box<object::Function>,
     args: Vec<Box<dyn object::Object>>,
 ) -> Box<dyn object::Object> {
-    let mut closure = make_func_env(&func, args);
-    eval_program(&func.body, &mut closure)
+    let closure = make_func_env(&func, args);
+    eval_program(&func.body, &closure)
 }
 
-fn make_func_env(func: &Box<object::Function>, args: Vec<Box<dyn object::Object>>) -> Env {
-    let mut closure = Env::wrap_env(Box::new(func.env.clone())); // it is also 'clone'
-    for (param, arg) in func.parameters.iter().zip(args) {
-        closure.set(param.value.clone(), arg)
+fn make_func_env(
+    func: &Box<object::Function>,
+    args: Vec<Box<dyn object::Object>>,
+) -> Rc<RefCell<Env>> {
+    let mut closure = Env::wrap_env(func.env.clone()); // it is also 'clone'
+    for (i, param) in func.parameters.iter().enumerate() {
+        closure.set(param.value.clone(), args[i].clone())
     }
-    closure
+    Rc::new(RefCell::new(closure))
 }

@@ -1,7 +1,9 @@
 use lexer::Lexer;
 use object::Env;
 use parser::Parser;
+use std::cell::RefCell;
 use std::io::Write;
+use std::rc::Rc;
 use std::time::SystemTime;
 
 fn prompt(name: &str) -> String {
@@ -16,7 +18,8 @@ fn prompt(name: &str) -> String {
 }
 
 fn main() {
-    let mut env = Env::new();
+    let env = Env::new();
+    let env = Rc::new(RefCell::new(env));
     loop {
         let input = prompt("> ");
         if input == "now" {
@@ -32,12 +35,12 @@ fn main() {
             let program = Parser::new(Lexer::new(input)).parse_program();
             if !program.statements.is_empty() {
                 println!("{}", program.statements[0].to_string());
-                let e = eval::eval(&program, &mut env);
+                let e = eval::eval(&program, &env);
                 println!("value : {}", e.inspect());
             }
         }
     }
 }
 
-// let ff = fn(n) { if(n == 0) { 1 } else { n * ff(n - 1) } };
+// let ff = fn(n) { if(n == 0) { 1 } else { n * ff(n - 1) } }; ff(2);
 // let add = fn(x, y) { x + y}; add(1, add(2, 3));
