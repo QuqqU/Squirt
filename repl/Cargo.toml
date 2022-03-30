@@ -8,4 +8,5 @@ version = "0.1.0"
 [dependencies]
 eval = {path = "../eval"}
 lexer = {path = "../lexer"}
+object = {path = "../object"}
 parser = {path = "../parser"}

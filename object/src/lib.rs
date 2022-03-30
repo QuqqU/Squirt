@@ -1,5 +1,11 @@
+mod environment;
+pub use environment::*;
+
+use ast;
 use std::any::Any;
+use std::cell::RefCell;
 use std::fmt::Debug;
+use std::rc::Rc;
 
 pub type ObjectType = &'static str;
 
@@ -127,5 +133,23 @@ impl Object for Error {
     }
     fn inspect(&self) -> String {
         format!("{}", self.value)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Function {
+    pub parameters: Vec<ast::Identifier>,
+    pub body:       Vec<ast::Statement>,
+    pub env:        Rc<RefCell<Env>>,
+}
+impl Object for Function {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn object_type(&self) -> ObjectType {
+        "Funciton"
+    }
+    fn inspect(&self) -> String {
+        format!("fn() {{}}") // todo
     }
 }

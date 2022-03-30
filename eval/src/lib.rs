@@ -1,8 +1,8 @@
-mod environment;
+use std::{cell::RefCell, rc::Rc};
 
-pub use environment::Env;
+use object::Env;
 
-pub fn eval(node: &dyn ast::Node, env: &mut environment::Env) -> Box<dyn object::Object> {
+pub fn eval(node: &dyn ast::Node, env: &Rc<RefCell<Env>>) -> Box<dyn object::Object> {
     let nd = node.as_any();
     if let Some(program) = nd.downcast_ref::<ast::Program>() {
         eval_program(&program.statements, env)
@@ -29,7 +29,8 @@ pub fn eval(node: &dyn ast::Node, env: &mut environment::Env) -> Box<dyn object:
                 if is_error(&value) {
                     return value;
                 }
-                env.set(name.value.clone(), value.clone());
+                env.borrow_mut().set(name.value.clone(), value.clone());
+                // println!("==> {:?}", env.get(&name.value.clone()));
                 value
             }
             _ => Box::new(object::Null {}), // TODO : how to handle?
@@ -88,6 +89,38 @@ pub fn eval(node: &dyn ast::Node, env: &mut environment::Env) -> Box<dyn object:
                 }
             }
             ast::Expression::Ident(ast::Identifier { token: _, value }) => eval_ident(value, env),
+            ast::Expression::FunctionLiteral {
+                token: _,
+                parameters,
+                body,
+            } => Box::new(object::Function {
+                parameters: parameters.to_vec(),
+                body:       body.to_vec(),
+                env:        Rc::clone(env), // todo: need to be ref / it is very high cost #issue 24
+            }),
+            ast::Expression::FunctionCall {
+                token: _,
+                func,
+                args,
+            } => {
+                let func = eval(&**func, env);
+
+                if is_error(&func) {
+                    return func;
+                }
+                let func = Box::new(match func.as_any().downcast_ref::<object::Function>() {
+                    Some(v) => v.clone(),
+                    None => return new_error("Not a func".to_string()),
+                });
+                // above, more fancy? is there way?
+
+                let args = eval_expressions(args, env);
+                if args.len() == 1 && is_error(args.first().unwrap()) {
+                    return args[0].clone(); // wanna change it to more safe
+                }
+
+                put_args_in_function(func, args)
+            }
             _ => Box::new(object::Null {}), // TODO : how to handle?
         }
     }
@@ -124,14 +157,10 @@ fn new_error(value: String) -> Box<object::Error> {
     Box::new(object::Error { value })
 }
 
-fn eval_program(
-    stmts: &Vec<ast::Statement>,
-    env: &mut environment::Env,
-) -> Box<dyn object::Object> {
+fn eval_program(stmts: &Vec<ast::Statement>, env: &Rc<RefCell<Env>>) -> Box<dyn object::Object> {
     let mut rlt: Box<dyn object::Object> = Box::new(object::Null {});
     for stmt in stmts {
         rlt = eval(stmt, env);
-        // println!("{} {}", stmt.to_string(), rlt.inspect());
         if rlt.object_type() == "ReturnValue" {
             let rlt = rlt
                 .as_any()
@@ -148,10 +177,7 @@ fn eval_program(
     rlt
 }
 
-fn eval_statements(
-    stmts: &Vec<ast::Statement>,
-    env: &mut environment::Env,
-) -> Box<dyn object::Object> {
+fn eval_statements(stmts: &Vec<ast::Statement>, env: &Rc<RefCell<Env>>) -> Box<dyn object::Object> {
     let mut rlt: Box<dyn object::Object> = Box::new(object::Null {});
     for stmt in stmts {
         rlt = eval(stmt, env);
@@ -304,9 +330,43 @@ fn eval_bool_infix_expression(
     }
 }
 
-fn eval_ident(name: &String, env: &environment::Env) -> Box<dyn object::Object> {
-    match env.get(name) {
+fn eval_ident(name: &String, env: &Rc<RefCell<Env>>) -> Box<dyn object::Object> {
+    match env.borrow().get(name) {
         Some(v) => v.clone(),
         None => new_error(format!("Ident not found: {}", name)),
     }
+}
+
+fn eval_expressions(
+    expressions: &Vec<ast::Expression>,
+    env: &Rc<RefCell<Env>>,
+) -> Vec<Box<dyn object::Object>> {
+    let mut v = vec![];
+    for exp in expressions {
+        let e = eval(exp, env);
+        if is_error(&e) {
+            return vec![e];
+        }
+        v.push(e);
+    }
+    v
+}
+
+fn put_args_in_function(
+    func: Box<object::Function>,
+    args: Vec<Box<dyn object::Object>>,
+) -> Box<dyn object::Object> {
+    let closure = make_func_env(&func, args);
+    eval_program(&func.body, &closure)
+}
+
+fn make_func_env(
+    func: &Box<object::Function>,
+    args: Vec<Box<dyn object::Object>>,
+) -> Rc<RefCell<Env>> {
+    let mut closure = Env::wrap_env(func.env.clone()); // it is also 'clone'
+    for (i, param) in func.parameters.iter().enumerate() {
+        closure.set(param.value.clone(), args[i].clone())
+    }
+    Rc::new(RefCell::new(closure))
 }
