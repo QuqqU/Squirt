@@ -1,6 +1,7 @@
-use std::{any::Any, fmt::*};
-
+use std::any::Any;
 use token::TokenType;
+
+mod util;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Identifier {
@@ -58,89 +59,6 @@ impl Node for Expression {
         self
     }
 }
-impl Expression {
-    pub fn to_string(&self) -> String {
-        match self {
-            Self::Ident(i) => format!("{}", i.value),
-            Self::IntegerLiteral { token: _, value } => format!("{}", value),
-            Self::Prefix {
-                token: _,
-                operator,
-                right,
-            } => format!("({}{})", operator, right.to_string()),
-            Self::Infix {
-                token: _,
-                left,
-                operator,
-                right,
-            } => format!("({} {} {})", left.to_string(), operator, right.to_string()),
-            Self::Bool { token: _, value } => format!("{}", value),
-            Self::If {
-                token: _,
-                condition,
-                consequence,
-                alternative,
-            } => {
-                if !alternative.is_empty() {
-                    format!(
-                        "if({}) {{ {} }} else {{ {} }}",
-                        condition.to_string(),
-                        consequence.iter().fold("".to_owned(), |acc, a| acc
-                            + &" ".to_owned()
-                            + &a.to_string())[1..]
-                            .to_owned(),
-                        alternative.iter().fold("".to_owned(), |acc, a| acc
-                            + &" ".to_owned()
-                            + &a.to_string())[1..]
-                            .to_owned()
-                    )
-                }
-                else {
-                    format!(
-                        "if({}) {{ {} }}",
-                        condition.to_string(),
-                        consequence.iter().fold("".to_owned(), |acc, a| acc
-                            + &" ".to_owned()
-                            + &a.to_string())[1..]
-                            .to_owned()
-                    )
-                }
-            }
-            Self::FunctionLiteral {
-                token: _,
-                parameters,
-                body,
-            } => {
-                format!(
-                    "fn({}) {{ {} }}",
-                    parameters
-                        .iter()
-                        .fold("".to_owned(), |acc, a| acc + &", ".to_owned() + &a.value)[2..]
-                        .to_owned(),
-                    body.iter().fold("".to_owned(), |acc, a| acc
-                        + &", ".to_owned()
-                        + &a.to_string())[2..]
-                        .to_owned()
-                )
-            }
-            Self::FunctionCall {
-                token: _,
-                func,
-                args,
-            } => {
-                format!(
-                    "{}({})",
-                    func.to_string(),
-                    args.iter().fold("".to_owned(), |acc, a| acc
-                        + &", ".to_owned()
-                        + &a.to_string())[2..]
-                        .to_owned()
-                )
-            }
-            _ => format!("Undefined"),
-        }
-    }
-}
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
@@ -163,22 +81,6 @@ impl Node for Statement {
         self
     }
 }
-impl Statement {
-    pub fn to_string(&self) -> String {
-        match self {
-            Self::Let {
-                token: _,
-                name,
-                value,
-            } => format!("let {} = {};", name.value, value.to_string()),
-            Self::Return { token: _, value } => format!("return {};", value.to_string()),
-            Self::Expr {
-                token: _,
-                expression,
-            } => format!("{}", expression.to_string()),
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Program {
@@ -187,10 +89,5 @@ pub struct Program {
 impl Node for Program {
     fn as_any(&self) -> &dyn Any {
         self
-    }
-}
-impl Program {
-    pub fn empty(&self) -> bool {
-        self.statements.is_empty()
     }
 }
