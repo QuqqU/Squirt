@@ -9,6 +9,7 @@ type InfixParseFn = fn(&mut Parser, ast::Expression) -> ast::Expression;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Priority {
     Lowest,
+    Assign,
     Equal,
     Compare,
     Sum,
@@ -40,6 +41,7 @@ impl Parser {
             next_token:         ntoken,
             // errors:     vec![],
             precedences:        HashMap::from([
+                (token::ASSIGN, Priority::Assign),
                 (token::EQ, Priority::Equal),
                 (token::NEQ, Priority::Equal),
                 (token::LT, Priority::Compare),
@@ -67,6 +69,7 @@ impl Parser {
         p.register_infix(token::GT, Parser::parse_infix_expression);
         p.register_infix(token::EQ, Parser::parse_infix_expression);
         p.register_infix(token::NEQ, Parser::parse_infix_expression);
+        p.register_infix(token::ASSIGN, Parser::parse_infix_expression);
 
         p.register_prefix(token::TRUE, Parser::parse_boolean);
         p.register_prefix(token::FALSE, Parser::parse_boolean);

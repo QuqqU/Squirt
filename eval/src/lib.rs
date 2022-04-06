@@ -59,15 +59,25 @@ pub fn eval(node: &dyn ast::Node, env: &Rc<RefCell<Env>>) -> Box<dyn object::Obj
                 operator,
                 right,
             } => {
-                let left = eval(&**left, env);
-                if is_error(&left) {
-                    return left;
+                let _left = eval(&**left, env);
+                if is_error(&_left) {
+                    return _left;
                 }
                 let right = eval(&**right, env);
                 if is_error(&right) {
                     return right;
                 }
-                return eval_infix_expression(operator, left, right);
+
+                if operator == "=" {
+                    let name = match &**left {
+                        ast::Expression::Ident(ast::Identifier { token: _, value }) => value,
+                        _ => return new_error("Cannot Assign to non-identifier".to_string()),
+                    };
+                    env.borrow_mut().set(name.to_owned(), right.clone());
+                    // println!("==> {:?}", env.get(&name.value.clone()));
+                    return right;
+                }
+                return eval_infix_expression(operator, _left, right);
             }
             ast::Expression::If {
                 token: _,
