@@ -1,46 +1,35 @@
-use lexer::Lexer;
-use object::Env;
-use parser::Parser;
-use std::cell::RefCell;
-use std::io::Write;
-use std::rc::Rc;
-use std::time::SystemTime;
-
-fn prompt(name: &str) -> String {
-    let mut line = String::new();
-    print!("{}", name);
-    std::io::stdout().flush().unwrap();
-    std::io::stdin()
-        .read_line(&mut line)
-        .expect("Error: Could not read a line");
-
-    return line.trim().to_string();
-}
+use repl::repl;
 
 fn main() {
-    let env = Env::new();
-    let env = Rc::new(RefCell::new(env));
-    loop {
-        let input = prompt("> ");
-        if input == "now" {
-            let unixtime = SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap();
-            println!("Current Unix time is {:?}", unixtime);
-        }
-        else if input == "exit" {
-            break;
-        }
-        else {
-            let program = Parser::new(Lexer::new(input)).parse_program();
-            if !program.statements.is_empty() {
-                println!("{}", program.statements[0].to_string());
-                let e = eval::eval(&program, &env);
-                println!("value : {}", e.inspect());
-            }
-        }
-    }
+    println!(
+        "
+     ___                         ___                       ___                 
+    /  /\\          ___          /__/\\        ___          /  /\\          ___   
+   /  /:/_        /  /\\         \\  \\:\\      /  /\\        /  /::\\        /  /\\  
+  /  /:/ /\\      /  /::\\         \\  \\:\\    /  /:/       /  /:/\\:\\      /  /:/  
+ /  /:/ /::\\    /  /:/\\:\\    ___  \\  \\:\\  /__/::\\      /  /:/~/:/     /  /:/   
+/__/:/ /:/\\:\\  /  /:/~/::\\  /__/\\  \\__\\:\\ \\__\\/\\:\\__  /__/:/ /:/___  /  /::\\   
+\\  \\:\\/:/~/:/ /__/:/ /:/\\:\\ \\  \\:\\ /  /:/    \\  \\:\\/\\ \\  \\:\\/:::::/ /__/:/\\:\\  
+ \\  \\::/ /:/  \\  \\:\\/:/__\\/  \\  \\:\\  /:/      \\__\\::/  \\  \\::/~~~~  \\__\\/  \\:\\ 
+  \\__\\/ /:/    \\  \\::/        \\  \\:\\/:/       /__/:/    \\  \\:\\           \\  \\:\\
+    /__/:/      \\__\\/          \\  \\::/        \\__\\/      \\  \\:\\           \\__\\/
+    \\__\\/                       \\__\\/                     \\__\\/                
+
+Squirt Programming Language Interpreter
+By QuqqU
+
+- To get more info, \"info\"
+- To quit, \"exit\" or \"quit\"
+
+"
+    );
+    repl();
 }
 
-// let ff = fn(n) { if(n == 0) { 1 } else { n * ff(n - 1) } }; ff(2);
-// let add = fn(x, y) { x + y}; add(1, add(2, 3));
+// let factorial = fn(n) { if(n == 0) { 1 } else { n * factorial(n - 1) } }; factorial(5);
+// let add = fn(x, y) { x + y }; add(1, add(2, 3));
+// let fibo = fn(n) { if(n < 2) { 1 } else { fibo(n - 1) + fibo(n - 2) } }; fibo(5);
+
+// let closure = fn(x) { fn(y) { x + y } }
+// let inner = closure(10)
+// inner(5)

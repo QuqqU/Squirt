@@ -102,7 +102,7 @@ impl Statement {
 }
 
 impl Program {
-    // pub fn empty(&self) -> bool {
-    //     self.statements.is_empty()
-    // }
+    pub fn is_empty(&self) -> bool {
+        self.statements.is_empty()
+    }
 }

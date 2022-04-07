@@ -1,6 +1,9 @@
 #[cfg(test)]
 mod parser_tests {
+    use ast;
     use ast::Identifier;
+    use parser;
+    use parser::Parser;
 
     #[test]
     fn test_let() {
@@ -13,8 +16,7 @@ mod parser_tests {
 
         let expected_ident: Vec<&str> = vec!["five", "ten", "result"];
 
-        let mut p = parser::Parser::new(lexer::Lexer::new(input));
-        let program = p.parse_program();
+        let program = Parser::parse(input);
 
         assert_eq!(program.statements.len(), expected_ident.len());
 
@@ -22,7 +24,11 @@ mod parser_tests {
             let stmt = &program.statements[i];
 
             match stmt {
-                ast::Statement::Let { token, name, value } => {
+                ast::Statement::Let {
+                    token,
+                    name,
+                    value: _,
+                } => {
                     assert_eq!(*token, token::LET);
                     assert_eq!(name.token, token::IDENT);
                     assert_eq!(name.value, *exp);
@@ -43,14 +49,13 @@ mod parser_tests {
         "
         .to_string();
 
-        let mut p = parser::Parser::new(lexer::Lexer::new(input));
-        let program = p.parse_program();
+        let program = Parser::parse(input);
 
         assert_eq!(program.statements.len(), 5);
 
         for stmt in program.statements {
             match stmt {
-                ast::Statement::Return { token, value } => {
+                ast::Statement::Return { token, value: _ } => {
                     assert_eq!(token, token::RETURN);
                 }
                 _ => panic!("Not a Let statement"),
@@ -65,8 +70,7 @@ mod parser_tests {
         "
         .to_string();
 
-        let mut p = parser::Parser::new(lexer::Lexer::new(input));
-        let program = p.parse_program();
+        let program = Parser::parse(input);
 
         assert_eq!(program.statements.len(), 1);
 
@@ -94,8 +98,7 @@ mod parser_tests {
         "
         .to_string();
 
-        let mut p = parser::Parser::new(lexer::Lexer::new(input));
-        let program = p.parse_program();
+        let program = Parser::parse(input);
 
         assert_eq!(program.statements.len(), 1);
 
@@ -161,8 +164,7 @@ mod parser_tests {
             },
         ];
 
-        let mut p = parser::Parser::new(lexer::Lexer::new(input));
-        let program = p.parse_program();
+        let program = Parser::parse(input);
 
         assert_eq!(program.statements.len(), 4);
 
@@ -170,7 +172,10 @@ mod parser_tests {
             let stmt = &program.statements[i];
 
             match stmt {
-                ast::Statement::Expr { token, expression } => {
+                ast::Statement::Expr {
+                    token: _,
+                    expression,
+                } => {
                     assert_eq!(expression, exp);
                 }
                 _ => panic!("Not a Expr Statement"),
@@ -291,8 +296,7 @@ mod parser_tests {
             },
         ];
 
-        let mut p = parser::Parser::new(lexer::Lexer::new(input));
-        let program = p.parse_program();
+        let program = Parser::parse(input);
 
         assert_eq!(program.statements.len(), 8);
 
@@ -356,8 +360,7 @@ mod parser_tests {
             "add(1, 2, (3 * 4), sub((5 + (6 * 7)), 8), (10 * 11))",
         ];
 
-        let mut p = parser::Parser::new(lexer::Lexer::new(input));
-        let program = p.parse_program();
+        let program = Parser::parse(input);
 
         assert_eq!(program.statements.len(), expected.len());
 
@@ -386,8 +389,7 @@ mod parser_tests {
             },
         ];
 
-        let mut p = parser::Parser::new(lexer::Lexer::new(input));
-        let program = p.parse_program();
+        let program = Parser::parse(input);
 
         assert_eq!(program.statements.len(), 2);
 
@@ -436,8 +438,7 @@ mod parser_tests {
             alternative: vec![],
         };
 
-        let mut p = parser::Parser::new(lexer::Lexer::new(input));
-        let program = p.parse_program();
+        let program = Parser::parse(input);
 
         assert_eq!(program.statements.len(), 1);
 
@@ -492,8 +493,7 @@ mod parser_tests {
             }],
         };
 
-        let mut p = parser::Parser::new(lexer::Lexer::new(input));
-        let program = p.parse_program();
+        let program = Parser::parse(input);
 
         assert_eq!(program.statements.len(), 5);
 
@@ -585,8 +585,7 @@ mod parser_tests {
             },
         ];
 
-        let mut p = parser::Parser::new(lexer::Lexer::new(input));
-        let program = p.parse_program();
+        let program = Parser::parse(input);
 
         assert_eq!(program.statements.len(), expected.len());
 
