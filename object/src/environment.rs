@@ -9,11 +9,12 @@ pub struct Env {
     outer: Option<Rc<RefCell<Env>>>,
 }
 impl Env {
-    pub fn new() -> Self {
-        Self {
+    pub fn new() -> Rc<RefCell<Self>> {
+        let e = Self {
             inner: HashMap::<String, Box<dyn super::Object>>::new(),
             outer: Option::None,
-        }
+        };
+        Rc::new(RefCell::new(e))
     }
 
     pub fn wrap_env(outer: Rc<RefCell<Env>>) -> Self {
