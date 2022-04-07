@@ -102,7 +102,7 @@ impl Eval {
                         };
                         env.borrow_mut().set(name.to_owned(), right.clone());
                         // println!("==> {:?}", env.get(&name.value.clone()));
-                        return right;
+                        return Box::new(object::NULL); // remove output in assign stmt;
                     }
                     return Eval::eval_infix_expression(operator, _left, right);
                 }
