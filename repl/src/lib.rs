@@ -15,9 +15,9 @@ fn prompt(name: &str) -> String {
 
 pub fn repl() {
     let eval = Eval::new();
-    loop {
+    'repl: loop {
         match prompt("> ").as_str() {
-            "exit" | "quit" => break,
+            "exit" | "quit" => break 'repl,
             "info" => {
                 println!(
                     "SPLI: Squirt Programming Language Interpreter\

@@ -1,19 +1,21 @@
+use token::Token;
+
 use super::Parser;
 use super::Priority;
 
-impl Parser {
-    pub(super) fn parse_statement(&mut self) -> ast::Statement {
-        match self.curr_token.token_type {
-            token::LET => self.parse_let_statement(),
-            token::RETURN => self.parse_return_statement(),
+impl<'a> Parser<'a> {
+    pub(super) fn parse_statement(&mut self) -> ParsingResult<ast::Statement> {
+        match self.curr_token {
+            Token::Let => self.parse_let_statement(),
+            Token::Return => self.parse_return_statement(),
             _ => self.parse_expr_statement(),
         }
     }
 
     pub(super) fn parse_let_statement(&mut self) -> ast::Statement {
-        let token_type = self.curr_token.token_type;
+        // let token_type = self.curr_token.token_type;
 
-        if !self.expect_next(token::IDENT) {
+        if !self.expect_next(Token::Ident) {
             panic!("PAR0001: No ident after LET");
             // if error return null
         }
@@ -33,7 +35,6 @@ impl Parser {
         self.expect_next(token::SEMICOLON);
 
         let stmt = ast::Statement::Let {
-            token: token_type,
             name: var_name,
             value,
         };
@@ -48,10 +49,7 @@ impl Parser {
         let value = self.parse_expression(Priority::Lowest);
         self.expect_next(token::SEMICOLON);
 
-        let stmt = ast::Statement::Return {
-            token: token_type,
-            value,
-        };
+        let stmt = ast::Statement::Return { value };
 
         stmt
     }
@@ -62,10 +60,7 @@ impl Parser {
 
         self.expect_next(token::SEMICOLON);
 
-        let stmt = ast::Statement::Expr {
-            token:      token_type,
-            expression: expr,
-        };
+        let stmt = ast::Statement::Expr { expression: expr };
 
         stmt
     }

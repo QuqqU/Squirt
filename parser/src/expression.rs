@@ -98,39 +98,35 @@ impl Parser {
     }
 
     pub(super) fn parse_prefix_expression(&mut self) -> ast::Expression {
-        let token = self.curr_token.token_type;
-        let operator = self.curr_token.literal.clone();
+        let token = self.curr_token;
+        // let operator = self.curr_token.literal.clone();
         self.next_token();
         let right = Box::new(self.parse_expression(Priority::Prefix));
 
         ast::Expression::Prefix {
             token,
-            operator,
+            // operator,
             right,
         }
     }
 
     pub(super) fn parse_infix_expression(&mut self, left: ast::Expression) -> ast::Expression {
-        let token = self.curr_token.token_type;
-        let operator = self.curr_token.literal.clone();
+        let token = self.curr_token; //.token_type;
+                                     // let operator = self.curr_token.literal.clone();
         let precedence = self.curr_precedence();
         self.next_token();
 
         ast::Expression::Infix {
             token,
             left: Box::new(left),
-            operator,
+            // operator,
             right: Box::new(self.parse_expression(precedence)),
         }
     }
 
     pub(super) fn parse_boolean(&mut self) -> ast::Expression {
-        let token = self.curr_token.token_type;
-
-        ast::Expression::Bool {
-            token,
-            value: self.curr_token.token_type == token::TRUE,
-        }
+        // let token = self.curr_token.token_type;
+        ast::Expression::Bool(self.curr_token == Token::True)
     }
 
     pub(super) fn parse_grouped_expression(&mut self) -> ast::Expression {
@@ -178,7 +174,7 @@ impl Parser {
         }
 
         ast::Expression::If {
-            token,
+            // token,
             condition,
             consequence,
             alternative,
@@ -205,7 +201,7 @@ impl Parser {
         let body = self.parse_block_statement();
 
         ast::Expression::FunctionLiteral {
-            token,
+            // token,
             parameters,
             body,
         }
@@ -222,7 +218,7 @@ impl Parser {
         let args = self.parse_function_arguments();
 
         ast::Expression::FunctionCall {
-            token,
+            // token,
             func: Box::new(func),
             args,
         }

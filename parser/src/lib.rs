@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use ast;
 use lexer::Lexer;
-use token::{Token, TokenType};
+use token::{Token, TokenLiteral};
 
 mod expression;
 mod statement;
@@ -20,20 +20,22 @@ pub enum Priority {
     Call,
 }
 
-pub struct Parser {
-    lexer:      Lexer,
+pub type ParsingResult<T> = Result<T, &'static str>;
+
+pub struct Parser<'a> {
+    lexer:      Lexer<'a>,
     curr_token: Token,
     next_token: Token,
 
     // todo errors
     // errors:     Vec<String>,
-    precedences:        HashMap<TokenType, Priority>,
-    prefix_parse_funcs: HashMap<TokenType, PrefixParseFn>,
-    infix_parse_funcs:  HashMap<TokenType, InfixParseFn>,
+    precedences:        HashMap<TokenLiteral, Priority>,
+    prefix_parse_funcs: HashMap<TokenLiteral, PrefixParseFn>,
+    infix_parse_funcs:  HashMap<TokenLiteral, InfixParseFn>,
 }
 
-impl Parser {
-    pub fn parse(input: String) -> ast::Program {
+impl<'a> Parser<'a> {
+    pub fn parse(input: &'a str) -> ParsingResult<ast::Program> {
         let mut l = Lexer::new(input);
 
         let ctoken = l.next_token();
@@ -87,12 +89,12 @@ impl Parser {
     }
 
     fn next_token(&mut self) {
-        self.curr_token = self.next_token.clone();
+        self.curr_token = self.next_token;
         self.next_token = self.lexer.next_token();
     }
 
-    fn expect_next(&mut self, expected_type: token::TokenType) -> bool {
-        if self.next_token.token_type == expected_type {
+    fn expect_next(&mut self, expected_type: Token) -> bool {
+        if self.next_token == expected_type {
             self.next_token();
             true
         }
@@ -103,10 +105,10 @@ impl Parser {
     }
 }
 
-impl Parser {
-    fn parse_program(&mut self) -> ast::Program {
+impl<'a> Parser<'a> {
+    fn parse_program(&mut self) -> ParsingResult<ast::Program> {
         let mut program = ast::Program { statements: vec![] };
-        while self.curr_token.token_type != token::EOF {
+        while self.curr_token != Token::Eof {
             let stmt = self.parse_statement();
             program.statements.push(stmt);
             self.next_token();

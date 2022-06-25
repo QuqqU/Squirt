@@ -1,13 +1,14 @@
+//mod util;
+
 use std::any::Any;
-use token::TokenType;
 
-mod util;
+use token::Token;
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct Identifier {
-    pub token: TokenType, // token::IDENT
-    pub value: String,
-}
+// #[derive(Debug, PartialEq, Clone)]
+// pub struct Identifier {
+//     pub token: TokenType, // token::IDENT
+//     pub value: String,
+// }
 // pub type BlockStatement = Vec<Statement>;
 
 pub trait Node {
@@ -17,41 +18,35 @@ pub trait Node {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Undefined,
-    Ident(Identifier),
-    IntegerLiteral {
-        token: TokenType,
-        value: i64,
-    },
+    Identifier(String),
+    Integer(i64),
     Prefix {
-        token:    TokenType,
-        operator: String,
-        right:    Box<Expression>,
+        token: Token,
+        // operator: String,
+        right: Box<Expression>,
     },
     Infix {
-        token:    TokenType,
-        left:     Box<Expression>,
-        operator: String,
-        right:    Box<Expression>,
+        token: Token,
+        left:  Box<Expression>,
+        // operator: String,
+        right: Box<Expression>,
     },
-    Bool {
-        token: TokenType,
-        value: bool,
-    },
+    Bool(bool),
     If {
-        token:       TokenType,
+        // token:       Token,
         condition:   Box<Expression>,
         consequence: Vec<Statement>,
         alternative: Vec<Statement>,
     },
     FunctionLiteral {
-        token:      TokenType,
-        parameters: Vec<Identifier>,
+        // token:      Token,
+        parameters: Vec<Token>,
         body:       Vec<Statement>,
     },
     FunctionCall {
-        token: TokenType,       // token::LPAREN
-        func:  Box<Expression>, // functionliteral or ident
-        args:  Vec<Expression>,
+        // token: Token,       // token::LPAREN
+        func: Box<Expression>, // functionliteral or ident
+        args: Vec<Expression>,
     },
 }
 impl Node for Expression {
@@ -63,16 +58,16 @@ impl Node for Expression {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Let {
-        token: TokenType, // token::LET
-        name:  Identifier,
+        // token: Token, // token::LET
+        name:  String,
         value: Expression,
     },
     Return {
-        token: TokenType, // token::RETURN
+        // token: TokenType, // token::RETURN
         value: Expression,
     },
     Expr {
-        token:      TokenType, //expression 의 첫 토큰
+        // token:      TokenType, //expression 의 첫 토큰
         expression: Expression,
     },
 }

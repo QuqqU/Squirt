@@ -1,68 +1,63 @@
-#[cfg(test)]
-mod parser_tests {
-    use ast;
-    use ast::Identifier;
-    use parser;
-    use parser::Parser;
+use ast::Identifier;
+use parser::Parser;
 
-    #[test]
-    fn test_let() {
-        let input = "
+#[test]
+fn test_let() {
+    let input = "
             let five = 5;
             let ten = 10;
             let result = add(five, ten);
-        "
-        .to_string();
+        ";
 
-        let expected_ident: Vec<&str> = vec!["five", "ten", "result"];
+    let expected_ident: Vec<&str> = vec!["five", "ten", "result"];
 
-        let program = Parser::parse(input);
+    let program = Parser::parse(input);
 
-        assert_eq!(program.statements.len(), expected_ident.len());
+    assert_eq!(program.statements.len(), expected_ident.len());
 
-        for (i, exp) in expected_ident.iter().enumerate() {
-            let stmt = &program.statements[i];
+    for (i, exp) in expected_ident.iter().enumerate() {
+        let stmt = &program.statements[i];
 
-            match stmt {
-                ast::Statement::Let {
-                    token,
-                    name,
-                    value: _,
-                } => {
-                    assert_eq!(*token, token::LET);
-                    assert_eq!(name.token, token::IDENT);
-                    assert_eq!(name.value, *exp);
-                }
-                _ => panic!("Not a Let statement"),
-            };
-        }
+        match stmt {
+            ast::Statement::Let {
+                // token,
+                name,
+                value,
+            } => {
+                // assert_eq!(*token, Token::Let);
+                assert_eq!(name, exp);
+                // assert_eq!(name.value, exp);
+            }
+            _ => panic!("Not a Let statement"),
+        };
     }
+}
+/*
 
-    #[test]
-    fn test_return() {
-        let input = "
+#[test]
+fn test_return() {
+    let input = "
             return five;
             return ten;
             return 123;
             return add(five, ten);
             return add(five, 15);
         "
-        .to_string();
+    .to_string();
 
-        let program = Parser::parse(input);
+    let program = Parser::parse(input);
 
-        assert_eq!(program.statements.len(), 5);
+    assert_eq!(program.statements.len(), 5);
 
-        for stmt in program.statements {
-            match stmt {
-                ast::Statement::Return { token, value: _ } => {
-                    assert_eq!(token, token::RETURN);
-                }
-                _ => panic!("Not a Let statement"),
-            };
-        }
+    for stmt in program.statements {
+        match stmt {
+            ast::Statement::Return { token, value: _ } => {
+                assert_eq!(token, token::RETURN);
+            }
+            _ => panic!("Not a Let statement"),
+        };
     }
-
+}
     #[test]
     fn test_ident_expression() {
         let input = "
@@ -599,4 +594,4 @@ mod parser_tests {
             }
         }
     }
-}
+*/

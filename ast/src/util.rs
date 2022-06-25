@@ -3,8 +3,8 @@ use super::{Expression, Program, Statement};
 impl Expression {
     pub fn to_string(&self) -> String {
         match self {
-            Self::Ident(i) => format!("{}", i.value),
-            Self::IntegerLiteral { token: _, value } => format!("{}", value),
+            Self::Identifier(ident) => format!("{}", ident),
+            Self::Integer(i) => format!("{}", i),
             Self::Prefix {
                 token: _,
                 operator,
