@@ -1,11 +1,13 @@
 use std::{iter::Peekable, str::Chars};
 
-use token::{look_up_ident, Token};
+use token::{look_up_ident, Token, TokenType};
 
 pub struct Lexer<'a> {
     pub input:   Peekable<Chars<'a>>,
     pub poisons: Vec<char>,
     ch:          char,
+    row:         i64,
+    column:      i64,
 }
 
 impl<'a> Lexer<'a> {
@@ -14,55 +16,161 @@ impl<'a> Lexer<'a> {
             input:   input.chars().peekable(),
             poisons: vec![],
             ch:      ' ',
+            row:     1,
+            column:  0,
         }
     }
 
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespaces();
 
+        let row = self.row;
+        let column = self.column;
+
         let token = match self.ch {
             '=' => {
                 if self.peek_char() == '=' {
                     self.read_char();
-                    Token::Eq
+
+                    Token {
+                        token_type: TokenType::Eq,
+                        literal: token::EQ.to_string(),
+                        row,
+                        column,
+                    }
                 }
                 else {
-                    Token::Assign
+                    Token {
+                        token_type: TokenType::Assign,
+                        literal: token::ASSIGN.to_string(),
+                        row,
+                        column,
+                    }
                 }
             }
-            '+' => Token::Plus,
-            '-' => Token::Minus,
-            '*' => Token::Asterisk,
-            '/' => Token::Slash,
+            '+' => Token {
+                token_type: TokenType::Plus,
+                literal: token::PLUS.to_string(),
+                row,
+                column,
+            },
+            '-' => Token {
+                token_type: TokenType::Minus,
+                literal: token::MINUS.to_string(),
+                row,
+                column,
+            },
+            '*' => Token {
+                token_type: TokenType::Asterisk,
+                literal: token::ASTERISK.to_string(),
+                row,
+                column,
+            },
+            '/' => Token {
+                token_type: TokenType::Slash,
+                literal: token::SLASH.to_string(),
+                row,
+                column,
+            },
             '!' => {
                 if self.peek_char() == '=' {
                     self.read_char();
-                    Token::Neq
+                    Token {
+                        token_type: TokenType::Neq,
+                        literal: token::NEQ.to_string(),
+                        row,
+                        column,
+                    }
                 }
                 else {
-                    Token::Bang
+                    Token {
+                        token_type: TokenType::Bang,
+                        literal: token::BANG.to_string(),
+                        row,
+                        column,
+                    }
                 }
             }
-            '<' => Token::Lt,
-            '>' => Token::Gt,
-            ',' => Token::Comma,
-            ';' => Token::Semicolon,
-            '(' => Token::Lparen,
-            ')' => Token::Rparen,
-            '{' => Token::Lbrace,
-            '}' => Token::Rbrace,
-            '\0' => Token::Eof,
+            '<' => Token {
+                token_type: TokenType::Lt,
+                literal: token::LT.to_string(),
+                row,
+                column,
+            },
+            '>' => Token {
+                token_type: TokenType::Gt,
+                literal: token::GT.to_string(),
+                row,
+                column,
+            },
+            ',' => Token {
+                token_type: TokenType::Comma,
+                literal: token::COMMA.to_string(),
+                row,
+                column,
+            },
+            ';' => Token {
+                token_type: TokenType::Semicolon,
+                literal: token::SEMICOLON.to_string(),
+                row,
+                column,
+            },
+            '(' => Token {
+                token_type: TokenType::Lparen,
+                literal: token::LPAREN.to_string(),
+                row,
+                column,
+            },
+            ')' => Token {
+                token_type: TokenType::Rparen,
+                literal: token::RPAREN.to_string(),
+                row,
+                column,
+            },
+            '{' => Token {
+                token_type: TokenType::Lbrace,
+                literal: token::LBRACE.to_string(),
+                row,
+                column,
+            },
+            '}' => Token {
+                token_type: TokenType::Rbrace,
+                literal: token::RBRACE.to_string(),
+                row,
+                column,
+            },
+            '\0' => Token {
+                token_type: TokenType::Eof,
+                literal: token::EOF.to_string(),
+                row,
+                column,
+            },
             _ => {
                 if self.is_letter() {
                     let s = self.read_ident();
-                    return look_up_ident(s);
+                    return Token {
+                        token_type: look_up_ident(&s),
+                        literal: s,
+                        row,
+                        column,
+                    };
                 }
                 else if self.is_digit() {
-                    return Token::Int(self.read_number());
+                    return Token {
+                        token_type: TokenType::Int,
+                        literal: self.read_number(),
+                        row,
+                        column,
+                    };
                 }
                 else {
-                    self.poisons.push(self.ch);
-                    return Token::Poison;
+                    self.poisons.push(self.ch.clone());
+                    return Token {
+                        token_type: TokenType::Poison,
+                        literal: self.ch.to_string(),
+                        row,
+                        column,
+                    };
                 }
             }
         };
@@ -75,6 +183,12 @@ impl<'a> Lexer<'a> {
 impl<'a> Lexer<'a> {
     fn read_char(&mut self) {
         self.ch = self.input.next().unwrap_or('\0');
+        self.column += 1;
+
+        if self.ch == '\n' {
+            self.row += 1;
+            self.column = 0;
+        }
     }
 
     fn peek_char(&mut self) -> char {
@@ -96,13 +210,13 @@ impl<'a> Lexer<'a> {
         s
     }
 
-    fn read_number(&mut self) -> i64 {
+    fn read_number(&mut self) -> String {
         let mut s = String::new();
         while self.is_digit() {
             s.push(self.ch);
             self.read_char();
         }
-        s.parse::<i64>().unwrap()
+        s
     }
 
     fn is_letter(&self) -> bool {

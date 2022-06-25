@@ -1,6 +1,6 @@
 pub type TokenLiteral = &'static str;
 
-pub const ILLEGAL: TokenLiteral = "ILLEGAL";
+pub const POISON: TokenLiteral = "POISON";
 pub const EOF: TokenLiteral = "EOF";
 
 pub const IDENT: TokenLiteral = "IDENT";
@@ -27,7 +27,7 @@ pub const LBRACE: TokenLiteral = "{";
 pub const RBRACE: TokenLiteral = "}";
 
 pub const LET: TokenLiteral = "LET";
-pub const FUNC: TokenLiteral = "FUNCTION";
+pub const FUNC: TokenLiteral = "FUNC";
 pub const TRUE: TokenLiteral = "TRUE";
 pub const FALSE: TokenLiteral = "FALSE";
 pub const IF: TokenLiteral = "IF";

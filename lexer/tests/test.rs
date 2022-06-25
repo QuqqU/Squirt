@@ -1,22 +1,22 @@
 use lexer::Lexer;
-use token::Token;
+use token::{Token, TokenType};
 
-type Answer = Vec<Token>;
+type Answer = Vec<TokenType>;
 
 #[test]
 fn simple_literal() {
     let input = "=+(){},;";
 
     let expected: Answer = vec![
-        Token::Assign,
-        Token::Plus,
-        Token::Lparen,
-        Token::Rparen,
-        Token::Lbrace,
-        Token::Rbrace,
-        Token::Comma,
-        Token::Semicolon,
-        Token::Eof,
+        TokenType::Assign,
+        TokenType::Plus,
+        TokenType::Lparen,
+        TokenType::Rparen,
+        TokenType::Lbrace,
+        TokenType::Rbrace,
+        TokenType::Comma,
+        TokenType::Semicolon,
+        TokenType::Eof,
     ];
 
     let mut l = Lexer::new(input);
@@ -24,19 +24,19 @@ fn simple_literal() {
     for exp in expected.iter() {
         let tok = l.next_token();
 
-        assert_eq!(&tok, exp);
+        assert_eq!(&tok.token_type, exp);
     }
 }
 
 #[test]
-fn illegal_literal() {
+fn poison() {
     let input = "let a = ";
 
     let expected: Answer = vec![
-        Token::Let,
-        Token::Ident("a".to_string()),
-        Token::Assign,
-        Token::Illegal(''),
+        TokenType::Let,
+        TokenType::Ident,
+        TokenType::Assign,
+        TokenType::Poison,
     ];
 
     let mut l = Lexer::new(input);
@@ -44,7 +44,7 @@ fn illegal_literal() {
     for exp in expected.iter() {
         let tok = l.next_token();
 
-        assert_eq!(&tok, exp);
+        assert_eq!(&tok.token_type, exp);
     }
 }
 
@@ -53,10 +53,182 @@ fn integer() {
     let input = "let a = 1024";
 
     let expected: Answer = vec![
-        Token::Let,
-        Token::Ident("a".to_string()),
-        Token::Assign,
-        Token::Int(1024),
+        TokenType::Let,
+        TokenType::Ident,
+        TokenType::Assign,
+        TokenType::Int,
+    ];
+
+    let mut l = Lexer::new(input);
+
+    for exp in expected.iter() {
+        let tok = l.next_token();
+
+        assert_eq!(&tok.token_type, exp);
+
+        if *exp == TokenType::Int {
+            assert_eq!(&tok.literal, "1024");
+        }
+    }
+}
+
+#[test]
+fn token_position1() {
+    let input = "let five = 5;
+let ten = 10;";
+
+    let expected: Vec<Token> = vec![
+        Token {
+            token_type: TokenType::Let,
+            literal:    "let".to_string(),
+            row:        1,
+            column:     1,
+        },
+        Token {
+            token_type: TokenType::Ident,
+            literal:    "five".to_string(),
+            row:        1,
+            column:     5,
+        },
+        Token {
+            token_type: TokenType::Assign,
+            literal:    "=".to_string(),
+            row:        1,
+            column:     10,
+        },
+        Token {
+            token_type: TokenType::Int,
+            literal:    "5".to_string(),
+            row:        1,
+            column:     12,
+        },
+        Token {
+            token_type: TokenType::Semicolon,
+            literal:    ";".to_string(),
+            row:        1,
+            column:     13,
+        },
+        Token {
+            token_type: TokenType::Let,
+            literal:    "let".to_string(),
+            row:        2,
+            column:     1,
+        },
+        Token {
+            token_type: TokenType::Ident,
+            literal:    "ten".to_string(),
+            row:        2,
+            column:     5,
+        },
+        Token {
+            token_type: TokenType::Assign,
+            literal:    "=".to_string(),
+            row:        2,
+            column:     9,
+        },
+        Token {
+            token_type: TokenType::Int,
+            literal:    "10".to_string(),
+            row:        2,
+            column:     11,
+        },
+        Token {
+            token_type: TokenType::Semicolon,
+            literal:    ";".to_string(),
+            row:        2,
+            column:     13,
+        },
+        Token {
+            token_type: TokenType::Eof,
+            literal:    "EOF".to_string(),
+            row:        2,
+            column:     14,
+        },
+    ];
+
+    let mut l = Lexer::new(input);
+
+    for exp in expected.iter() {
+        let tok = l.next_token();
+
+        assert_eq!(&tok, exp);
+    }
+}
+
+#[test]
+fn token_position2() {
+    let input = "
+    let five = 5;
+let ten = 10;
+";
+
+    let expected: Vec<Token> = vec![
+        Token {
+            token_type: TokenType::Let,
+            literal:    "let".to_string(),
+            row:        2,
+            column:     5,
+        },
+        Token {
+            token_type: TokenType::Ident,
+            literal:    "five".to_string(),
+            row:        2,
+            column:     9,
+        },
+        Token {
+            token_type: TokenType::Assign,
+            literal:    "=".to_string(),
+            row:        2,
+            column:     14,
+        },
+        Token {
+            token_type: TokenType::Int,
+            literal:    "5".to_string(),
+            row:        2,
+            column:     16,
+        },
+        Token {
+            token_type: TokenType::Semicolon,
+            literal:    ";".to_string(),
+            row:        2,
+            column:     17,
+        },
+        Token {
+            token_type: TokenType::Let,
+            literal:    "let".to_string(),
+            row:        3,
+            column:     1,
+        },
+        Token {
+            token_type: TokenType::Ident,
+            literal:    "ten".to_string(),
+            row:        3,
+            column:     5,
+        },
+        Token {
+            token_type: TokenType::Assign,
+            literal:    "=".to_string(),
+            row:        3,
+            column:     9,
+        },
+        Token {
+            token_type: TokenType::Int,
+            literal:    "10".to_string(),
+            row:        3,
+            column:     11,
+        },
+        Token {
+            token_type: TokenType::Semicolon,
+            literal:    ";".to_string(),
+            row:        3,
+            column:     13,
+        },
+        Token {
+            token_type: TokenType::Eof,
+            literal:    "EOF".to_string(),
+            row:        4,
+            column:     1,
+        },
     ];
 
     let mut l = Lexer::new(input);
@@ -81,43 +253,43 @@ fn let_and_func() {
         ";
 
     let expected: Answer = vec![
-        Token::Let,
-        Token::Ident("five".to_string()),
-        Token::Assign,
-        Token::Int(5),
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident("ten".to_string()),
-        Token::Assign,
-        Token::Int(10),
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident("add".to_string()),
-        Token::Assign,
-        Token::Func,
-        Token::Lparen,
-        Token::Ident("x".to_string()),
-        Token::Comma,
-        Token::Ident("y".to_string()),
-        Token::Rparen,
-        Token::Lbrace,
-        Token::Ident("x".to_string()),
-        Token::Plus,
-        Token::Ident("y".to_string()),
-        Token::Semicolon,
-        Token::Rbrace,
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident("result".to_string()),
-        Token::Assign,
-        Token::Ident("add".to_string()),
-        Token::Lparen,
-        Token::Ident("five".to_string()),
-        Token::Comma,
-        Token::Ident("ten".to_string()),
-        Token::Rparen,
-        Token::Semicolon,
-        Token::Eof,
+        TokenType::Let,
+        TokenType::Ident,
+        TokenType::Assign,
+        TokenType::Int,
+        TokenType::Semicolon,
+        TokenType::Let,
+        TokenType::Ident,
+        TokenType::Assign,
+        TokenType::Int,
+        TokenType::Semicolon,
+        TokenType::Let,
+        TokenType::Ident,
+        TokenType::Assign,
+        TokenType::Func,
+        TokenType::Lparen,
+        TokenType::Ident,
+        TokenType::Comma,
+        TokenType::Ident,
+        TokenType::Rparen,
+        TokenType::Lbrace,
+        TokenType::Ident,
+        TokenType::Plus,
+        TokenType::Ident,
+        TokenType::Semicolon,
+        TokenType::Rbrace,
+        TokenType::Semicolon,
+        TokenType::Let,
+        TokenType::Ident,
+        TokenType::Assign,
+        TokenType::Ident,
+        TokenType::Lparen,
+        TokenType::Ident,
+        TokenType::Comma,
+        TokenType::Ident,
+        TokenType::Rparen,
+        TokenType::Semicolon,
+        TokenType::Eof,
     ];
 
     let mut l = Lexer::new(input);
@@ -125,7 +297,7 @@ fn let_and_func() {
     for exp in expected.iter() {
         let tok = l.next_token();
 
-        assert_eq!(&tok, exp);
+        assert_eq!(&tok.token_type, exp);
     }
 }
 
@@ -151,73 +323,73 @@ fn operators() {
         ";
 
     let expected: Answer = vec![
-        Token::Let,
-        Token::Ident("five".to_string()),
-        Token::Assign,
-        Token::Int(5),
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident("ten".to_string()),
-        Token::Assign,
-        Token::Int(10),
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident("add".to_string()),
-        Token::Assign,
-        Token::Func,
-        Token::Lparen,
-        Token::Ident("x".to_string()),
-        Token::Comma,
-        Token::Ident("y".to_string()),
-        Token::Rparen,
-        Token::Lbrace,
-        Token::Ident("x".to_string()),
-        Token::Plus,
-        Token::Ident("y".to_string()),
-        Token::Semicolon,
-        Token::Rbrace,
-        Token::Semicolon,
-        Token::Let,
-        Token::Ident("result".to_string()),
-        Token::Assign,
-        Token::Ident("add".to_string()),
-        Token::Lparen,
-        Token::Ident("five".to_string()),
-        Token::Comma,
-        Token::Ident("ten".to_string()),
-        Token::Rparen,
-        Token::Semicolon,
-        Token::Plus,
-        Token::Minus,
-        Token::Asterisk,
-        Token::Slash,
-        Token::Bang,
-        Token::Int(1),
-        Token::Lt,
-        Token::Int(3),
-        Token::Gt,
-        Token::Int(2),
-        Token::If,
-        Token::Lparen,
-        Token::Int(5),
-        Token::Neq,
-        Token::Int(3),
-        Token::Rparen,
-        Token::Lbrace,
-        Token::Return,
-        Token::True,
-        Token::Semicolon,
-        Token::Rbrace,
-        Token::Else,
-        Token::Lbrace,
-        Token::Return,
-        Token::False,
-        Token::Semicolon,
-        Token::Rbrace,
-        Token::Int(1),
-        Token::Eq,
-        Token::Int(1),
-        Token::Eof,
+        TokenType::Let,
+        TokenType::Ident,
+        TokenType::Assign,
+        TokenType::Int,
+        TokenType::Semicolon,
+        TokenType::Let,
+        TokenType::Ident,
+        TokenType::Assign,
+        TokenType::Int,
+        TokenType::Semicolon,
+        TokenType::Let,
+        TokenType::Ident,
+        TokenType::Assign,
+        TokenType::Func,
+        TokenType::Lparen,
+        TokenType::Ident,
+        TokenType::Comma,
+        TokenType::Ident,
+        TokenType::Rparen,
+        TokenType::Lbrace,
+        TokenType::Ident,
+        TokenType::Plus,
+        TokenType::Ident,
+        TokenType::Semicolon,
+        TokenType::Rbrace,
+        TokenType::Semicolon,
+        TokenType::Let,
+        TokenType::Ident,
+        TokenType::Assign,
+        TokenType::Ident,
+        TokenType::Lparen,
+        TokenType::Ident,
+        TokenType::Comma,
+        TokenType::Ident,
+        TokenType::Rparen,
+        TokenType::Semicolon,
+        TokenType::Plus,
+        TokenType::Minus,
+        TokenType::Asterisk,
+        TokenType::Slash,
+        TokenType::Bang,
+        TokenType::Int,
+        TokenType::Lt,
+        TokenType::Int,
+        TokenType::Gt,
+        TokenType::Int,
+        TokenType::If,
+        TokenType::Lparen,
+        TokenType::Int,
+        TokenType::Neq,
+        TokenType::Int,
+        TokenType::Rparen,
+        TokenType::Lbrace,
+        TokenType::Return,
+        TokenType::True,
+        TokenType::Semicolon,
+        TokenType::Rbrace,
+        TokenType::Else,
+        TokenType::Lbrace,
+        TokenType::Return,
+        TokenType::False,
+        TokenType::Semicolon,
+        TokenType::Rbrace,
+        TokenType::Int,
+        TokenType::Eq,
+        TokenType::Int,
+        TokenType::Eof,
     ];
 
     let mut l = Lexer::new(input);
@@ -225,6 +397,6 @@ fn operators() {
     for exp in expected.iter() {
         let tok = l.next_token();
 
-        assert_eq!(&tok, exp);
+        assert_eq!(&tok.token_type, exp);
     }
 }
