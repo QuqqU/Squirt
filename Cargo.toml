@@ -1,11 +1,10 @@
 [workspace]
 
 members = [
-  "token",
   "lexer",
   "ast",
   "parser",
-  "repl",
-  "eval",
-  "object",
+#   "repl",
+#   "eval",
+#   "object",
 ]

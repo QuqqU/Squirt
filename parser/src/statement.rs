@@ -1,67 +1,85 @@
-use token::Token;
+use ast::Location;
+use lexer::token::TokenType;
+
+use crate::{try_parse, PartParsingResult};
 
 use super::Parser;
-use super::Priority;
+use crate::Priority;
+// use crate::parser::try_parse;
 
 impl<'a> Parser<'a> {
-    pub(super) fn parse_statement(&mut self) -> ParsingResult<ast::Statement> {
-        match self.curr_token {
-            Token::Let => self.parse_let_statement(),
-            Token::Return => self.parse_return_statement(),
-            _ => self.parse_expr_statement(),
-        }
+    pub fn parse_statement(&mut self) -> PartParsingResult<ast::Stmt> {
+        let stmt = match self.curr_token.token_type {
+            TokenType::Let => try_parse!(self, parse_let_statement),
+            // self.parse_let_statement(),
+            TokenType::Return => try_parse!(self, parse_return_statement),
+            // self.parse_return_statement(),
+            _ => try_parse!(self, parse_expr_statement),
+            //self.parse_expr_statement(),
+            // _ => todo!(),
+        };
+
+        Ok(stmt)
     }
 
-    pub(super) fn parse_let_statement(&mut self) -> ast::Statement {
+    pub fn parse_let_statement(&mut self) -> PartParsingResult<ast::Stmt> {
         // let token_type = self.curr_token.token_type;
 
-        if !self.expect_next(Token::Ident) {
-            panic!("PAR0001: No ident after LET");
+        if !self.expect_next(TokenType::Ident, "PAR0010") {
+            // panic!("PAR0001: No ident after LET");
+            return Err(());
             // if error return null
         }
 
-        let var_name = ast::Identifier {
-            token: self.curr_token.token_type,
-            value: self.curr_token.literal.clone(),
+        let var_name = ast::Expr::Ident {
+            // token: self.curr_token.token_type,
+            // value: self.curr_token.literal.clone(),
+            loc:  Location::new(self.curr_token.row, self.curr_token.column),
+            name: self.curr_token.literal.clone(),
         };
 
-        if !self.expect_next(token::ASSIGN) {
-            panic!("PAR0002: No ASSIGN sign after ident");
+        if !self.expect_next(TokenType::Assign, "PAR0011") {
+            // panic!("PAR0002: No ASSIGN sign after ident");
+            return Err(());
             // if error return null
         }
         self.next_token();
 
-        let value = self.parse_expression(Priority::Lowest);
-        self.expect_next(token::SEMICOLON);
+        let value = try_parse!(self, parse_expression, Priority::Lowest);
+        // self.parse_expression(Priority::Lowest);
+        self.next_if(TokenType::Semicolon);
 
-        let stmt = ast::Statement::Let {
+        let stmt = ast::Stmt::Let {
+            // loc: Location,
             name: var_name,
             value,
         };
 
-        stmt
+        Ok(stmt)
     }
 
-    pub(super) fn parse_return_statement(&mut self) -> ast::Statement {
-        let token_type = self.curr_token.token_type;
+    pub fn parse_return_statement(&mut self) -> PartParsingResult<ast::Stmt> {
+        // let token_type = &self.curr_token.token_type;
+
+        // return
         self.next_token();
 
-        let value = self.parse_expression(Priority::Lowest);
-        self.expect_next(token::SEMICOLON);
+        let value = try_parse!(self, parse_expression, Priority::Lowest);
+        // let value = self.parse_expression(Priority::Lowest);
+        self.next_if(TokenType::Semicolon);
 
-        let stmt = ast::Statement::Return { value };
+        let stmt = ast::Stmt::Return { value };
 
-        stmt
+        Ok(stmt)
     }
 
-    pub(super) fn parse_expr_statement(&mut self) -> ast::Statement {
-        let token_type = self.curr_token.token_type;
-        let expr = self.parse_expression(Priority::Lowest);
+    pub fn parse_expr_statement(&mut self) -> PartParsingResult<ast::Stmt> {
+        // let token_type = &self.curr_token.token_type;
+        let expr = try_parse!(self, parse_expression, Priority::Lowest);
+        self.next_if(TokenType::Semicolon);
 
-        self.expect_next(token::SEMICOLON);
+        let stmt = ast::Stmt::Expr { expression: expr };
 
-        let stmt = ast::Statement::Expr { expression: expr };
-
-        stmt
+        Ok(stmt)
     }
 }

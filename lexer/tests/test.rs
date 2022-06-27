@@ -1,5 +1,5 @@
+use lexer::token::{Token, TokenType};
 use lexer::Lexer;
-use token::{Token, TokenType};
 
 type Answer = Vec<TokenType>;
 
@@ -140,7 +140,7 @@ let ten = 10;";
         },
         Token {
             token_type: TokenType::Eof,
-            literal:    "EOF".to_string(),
+            literal:    "\0".to_string(),
             row:        2,
             column:     14,
         },
@@ -225,7 +225,7 @@ let ten = 10;
         },
         Token {
             token_type: TokenType::Eof,
-            literal:    "EOF".to_string(),
+            literal:    "\0".to_string(),
             row:        4,
             column:     1,
         },
