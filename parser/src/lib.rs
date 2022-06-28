@@ -3,8 +3,8 @@ mod parser;
 
 mod statement;
 
-pub use parser::Parser;
-use parser::Priority;
+pub use crate::parser::Parser;
+use crate::parser::Priority;
 
 pub type ParsingResult<T> = Result<T, Vec<String>>;
 type PartParsingResult<T> = Result<T, ()>;
@@ -25,8 +25,21 @@ macro_rules! try_parse {
 }
 
 #[macro_export]
-macro_rules! expect_token {
-    ($self:ident, $exp:ident, $code:ident) => {
-        // if $self.$func($())
+macro_rules! ensure_curr {
+    ($self:ident, $exp:expr, $code:expr) => {
+        if !$self.verify_curr($exp, $code) {
+            return Err(());
+        }
+        $self.next_token();
+    };
+}
+
+#[macro_export]
+macro_rules! ensure_next {
+    ($self:ident, $exp:expr, $code:expr) => {
+        if !$self.expect_next($exp, $code) {
+            return Err(());
+        }
+        $self.next_token();
     };
 }

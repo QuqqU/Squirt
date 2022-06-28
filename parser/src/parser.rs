@@ -72,11 +72,11 @@ impl<'a> Parser<'a> {
         };
 
         parser.register_prefix(TokenType::Ident, |p| p.parse_ident());
-        parser.register_prefix(TokenType::Int, |p| p.parse_integer_literal());
+        parser.register_prefix(TokenType::Int, |p| p.parse_int());
         parser.register_prefix(TokenType::Bang, |p| p.parse_prefix_expression());
         parser.register_prefix(TokenType::Minus, |p| p.parse_prefix_expression());
-        parser.register_prefix(TokenType::True, |p| p.parse_boolean());
-        parser.register_prefix(TokenType::False, |p| p.parse_boolean());
+        parser.register_prefix(TokenType::True, |p| p.parse_bool());
+        parser.register_prefix(TokenType::False, |p| p.parse_bool());
         parser.register_prefix(TokenType::Lparen, |p| p.parse_grouped_expression());
         parser.register_prefix(TokenType::If, |p| p.parse_if_expression());
 
@@ -127,12 +127,36 @@ impl<'a> Parser<'a> {
         // self.next_token = self.lexer.next_token();
     }
 
-    pub fn next_if(&mut self, expected_type: TokenType) {
-        if self.next_token.token_type == expected_type {
+    pub fn next_if(&mut self, curr_token_type: TokenType) -> bool {
+        if self.curr_token.token_type == curr_token_type {
             self.next_token();
+            true
+        }
+        else {
+            false
         }
     }
 
+    // pub fn next_if(&mut self, expected_type: TokenType) {
+    //     if self.next_token.token_type == expected_type {
+    //         self.next_token();
+    //     }
+    // }
+
+    #[inline]
+    pub fn verify_curr(&mut self, checked_type: TokenType, code: &str) -> bool {
+        if self.curr_token.token_type == checked_type {
+            self.next_token();
+            true
+        }
+        else {
+            // if error append errros
+            self.raise_error(code, checked_type);
+            false
+        }
+    }
+
+    #[inline]
     pub fn expect_next(&mut self, expected_type: TokenType, code: &str) -> bool {
         if self.next_token.token_type == expected_type {
             // self.next_token();

@@ -1,61 +1,57 @@
 use ast::Location;
 
 use super::Parser;
-use crate::Priority;
-use crate::{try_parse, PartParsingResult};
+use crate::{ensure_curr, Priority};
+use crate::{ensure_next, try_parse, PartParsingResult};
 use lexer::token::TokenType;
 
 // for
 impl<'a> Parser<'a> {
     pub fn parse_expression(&mut self, priority: Priority) -> PartParsingResult<ast::Expr> {
+        // prefix & left
         let prefix = self
             .settings
             .prefix_parse_funcs
-            .get(&self.curr_token.token_type);
-        if let Some(prefix) = prefix {
-            // let mut left_exp = try_parse!(self, prefix);
-            let mut left_exp = prefix(self)?;
+            .get(&self.curr_token.token_type)
+            .unwrap();
 
-            while self.next_token.token_type != TokenType::Semicolon
-                && priority < self.next_precedence()
-            {
-                let infix = self
-                    .settings
-                    .infix_parse_funcs
-                    .get(&self.next_token.token_type)
-                    .cloned();
-                if let Some(infix) = infix {
-                    self.next_token();
-                    left_exp = infix(self, left_exp)?;
-                }
-                else {
-                    break;
-                }
-            }
+        let mut left_exp = prefix(self)?;
 
-            Ok(left_exp)
+        // infix
+        while self.curr_token.token_type != TokenType::Semicolon
+            && priority < self.curr_precedence()
+        {
+            let infix = self
+                .settings
+                .infix_parse_funcs
+                .get(&self.curr_token.token_type)
+                .cloned()
+                .unwrap();
+
+            left_exp = infix(self, left_exp)?;
         }
-        else {
-            unreachable!("PSR0010 : Prefix_Operator, Identifier, or Int Parsing Error")
-        }
+
+        Ok(left_exp)
     }
 
-    pub fn parse_block_statement(&mut self) -> PartParsingResult<Vec<ast::Stmt>> {
-        if !self.expect_next(TokenType::Lbrace, "PAR9999") {
-            return Err(());
-        }
+    // { stmt1; stmt2; }
+    pub fn parse_block_statements(&mut self) -> PartParsingResult<Vec<ast::Stmt>> {
+        // {
         self.next_token();
 
-        let mut block_stmt = vec![];
+        // stmts
+        let mut block_stmts = vec![];
         while self.curr_token.token_type != TokenType::Rbrace
-        // && self.curr_token.token_type != TokenType::Eof
+            && self.curr_token.token_type != TokenType::Eof
         {
-            // let stmt = self.parse_statement();
             let stmt = try_parse!(self, parse_statement);
-            block_stmt.push(stmt);
-            self.next_token();
+            block_stmts.push(stmt);
         }
-        Ok(block_stmt)
+
+        // }
+        ensure_curr!(self, TokenType::Rbrace, "PAR9999");
+
+        Ok(block_stmts)
     }
 }
 
@@ -70,111 +66,113 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn next_precedence(&self) -> Priority {
-        let p = self.settings.precedences.get(&self.next_token.token_type);
-        if let Some(p) = p {
-            p.clone()
-        }
-        else {
-            Priority::Lowest
-        }
-    }
+    // pub fn next_precedence(&self) -> Priority {
+    //     let p = self.settings.precedences.get(&self.next_token.token_type);
+    //     if let Some(p) = p {
+    //         p.clone()
+    //     }
+    //     else {
+    //         Priority::Lowest
+    //     }
+    // }
 }
 
 impl<'a> Parser<'a> {
     pub fn parse_ident(&mut self) -> PartParsingResult<ast::Expr> {
-        Ok(ast::Expr::Ident {
-            loc:  Location::new(self.curr_token.row, self.curr_token.column),
-            name: self.curr_token.literal.clone(),
-        })
+        let loc = Location::new(self.curr_token.row, self.curr_token.column);
+        let name = self.curr_token.literal.clone();
+        self.next_token();
+
+        Ok(ast::Expr::Ident { loc, name })
     }
 
-    pub fn parse_integer_literal(&mut self) -> PartParsingResult<ast::Expr> {
-        Ok(ast::Expr::Int {
-            loc:   Location::new(self.curr_token.row, self.curr_token.column),
-            value: self.curr_token.literal.parse().unwrap(),
-        })
+    pub fn parse_int(&mut self) -> PartParsingResult<ast::Expr> {
+        let loc = Location::new(self.curr_token.row, self.curr_token.column);
+        let value = self.curr_token.literal.parse().unwrap();
+        self.next_token();
+
+        Ok(ast::Expr::Int { loc, value })
+    }
+
+    pub fn parse_bool(&mut self) -> PartParsingResult<ast::Expr> {
+        let loc = Location::new(self.curr_token.row, self.curr_token.column);
+        let value = self.curr_token.token_type == TokenType::True;
+        self.next_token();
+
+        Ok(ast::Expr::Bool { loc, value })
     }
 
     pub fn parse_prefix_expression(&mut self) -> PartParsingResult<ast::Expr> {
-        // let token = self.curr_token;
+        // prefix operator
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
         let operator = Parser::token_2_prefix(self.curr_token.token_type);
-        // let operator = self.curr_token.literal.clone();
         self.next_token();
-        // let right = Box::new(self.parse_expression(Priority::Prefix));
+
+        // expression
         let right = Box::new(try_parse!(self, parse_expression, Priority::Prefix));
 
         Ok(ast::Expr::Prefix {
             loc,
-            // token,
             operator,
             right,
         })
     }
 
-    pub fn parse_infix_expression(&mut self, left: ast::Expr) -> PartParsingResult<ast::Expr> {
+    pub fn parse_infix_express(&mut self, left: ast::Expr) -> PartParsingResult<ast::Expr> {
+        // left expression
+        let left = Box::new(left);
+
+        // infix operator
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
         let operator = Parser::token_2_infix(self.curr_token.token_type);
-        // let token = self.curr_token; //.token_type;
-        // let operator = self.curr_token.literal.clone();
         let precedence = self.curr_precedence();
         self.next_token();
 
+        // right expression
+        let right = Box::new(try_parse!(self, parse_expression, precedence));
+
         Ok(ast::Expr::Infix {
             loc,
-            left: Box::new(left),
+            left,
             operator,
-            // right:    Box::new(self.parse_expression(precedence)),
-            right: Box::new(try_parse!(self, parse_expression, precedence)),
-        })
-    }
-
-    pub fn parse_boolean(&mut self) -> PartParsingResult<ast::Expr> {
-        // let token = self.curr_token.token_type;
-        Ok(ast::Expr::Bool {
-            loc:   Location::new(self.curr_token.row, self.curr_token.column),
-            value: self.curr_token.token_type == TokenType::True,
+            right,
         })
     }
 
     pub fn parse_grouped_expression(&mut self) -> PartParsingResult<ast::Expr> {
+        // (
         self.next_token();
-        // let expression = self.parse_expression(Priority::Lowest);
+
+        // expressions
         let expression = try_parse!(self, parse_expression, Priority::Lowest);
-        self.expect_next(TokenType::Rparen, "PAR9999");
+
+        // )
+        ensure_curr!(self, TokenType::Rparen, "PAR9999");
 
         Ok(expression)
     }
 
     pub fn parse_if_expression(&mut self) -> PartParsingResult<ast::Expr> {
         // if
-        // let token = self.curr_token;
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
+        self.next_token();
 
         // (condition)
-        if !self.expect_next(TokenType::Lparen, "PAR9999") {
-            return Err(());
-        }
-        self.next_token();
-
+        ensure_curr!(self, TokenType::Lparen, "PAR9999");
         let condition = Box::new(try_parse!(self, parse_expression, Priority::Lowest));
-
-        if !self.expect_next(TokenType::Rparen, "PAR9999") {
-            return Err(());
-        }
+        ensure_curr!(self, TokenType::Rparen, "PAR9999");
 
         // { consequence }
-        if !self.expect_next(TokenType::Lbrace, "PAR9999") {
-            return Err(());
-        }
-        self.next_token();
+        ensure_curr!(self, TokenType::Lbrace, "PAR9999");
+        let consequence = try_parse!(self, parse_block_statements);
+        ensure_curr!(self, TokenType::Rbrace, "PAR9999");
 
         // else { alternative }
-        let consequence = try_parse!(self, parse_block_statement);
         let mut alternative = vec![];
-        if self.expect_next(TokenType::Else, "PAR9999") {
-            alternative = try_parse!(self, parse_block_statement);
+        if self.next_if(TokenType::Else) {
+            ensure_curr!(self, TokenType::Lbrace, "PAR9999");
+            alternative = try_parse!(self, parse_block_statements);
+            ensure_curr!(self, TokenType::Rbrace, "PAR9999");
         }
 
         Ok(ast::Expr::If {
@@ -199,7 +197,7 @@ impl<'a> Parser<'a> {
         let parameters = try_parse!(self, parse_function_parameters);
 
         // { body }
-        let body = try_parse!(self, parse_block_statement);
+        let body = try_parse!(self, parse_block_statements);
 
         Ok(ast::Expr::FunctionLiteral {
             loc,
