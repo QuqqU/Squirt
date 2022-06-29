@@ -32,11 +32,20 @@ impl fmt::Display for Token {
 
 impl fmt::Debug for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Token{{{}({}) : ({}, {})}}",
-            self.token_type, self.literal, self.row, self.column
-        )
+        match self.token_type {
+            TokenType::Poison | TokenType::Eof | TokenType::Ident | TokenType::Int => {
+                write!(
+                    f,
+                    "Token{{ {}({}) : ({}, {}) }}",
+                    self.token_type, self.literal, self.row, self.column
+                )
+            }
+            _ => write!(
+                f,
+                "Token{{ {} : ({}, {}) }}",
+                self.literal, self.row, self.column
+            ),
+        }
     }
 }
 

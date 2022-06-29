@@ -1,21 +1,4 @@
-//mod util;
-
-// use std::any::Any;
-
-// use lexer::loc::Location;
-
 use super::location::Location;
-
-// #[derive(Debug, PartialEq, Clone)]
-// pub struct Identifier {
-//     pub loc: TokenType, // loc::IDENT
-//     pub value: String,
-// }
-// pub type BlockStatement = Vec<Stmt>;
-
-// pub trait Node {
-//     fn as_any(&self) -> &dyn Any;
-// }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum PrefixType {
@@ -68,51 +51,33 @@ pub enum Expr {
         consequence: Vec<Stmt>,
         alternative: Vec<Stmt>,
     },
-    FunctionLiteral {
+    FuncLiteral {
         loc:        Location,
-        parameters: Vec<Expr>, // Expr::Ident
+        parameters: Vec<Expr>, // Vec<Expr::Ident>
         body:       Vec<Stmt>,
     },
-    FunctionCall {
-        loc:  Location,  // loc::LPAREN
-        func: Box<Expr>, // functionliteral or ident
+    FuncCall {
+        loc:  Location,  // loc of Lparen
+        func: Box<Expr>, //Expr::FuncLiteral
         args: Vec<Expr>,
     },
 }
-// impl Node for Expr {
-//     fn as_any(&self) -> &dyn Any {
-//         self
-//     }
-// }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Stmt {
     Let {
-        // loc:   Location, // loc::LET
-        name:  Expr, // Expr::Ident
-        value: Expr,
+        name: Expr, // Expr::Ident
+        expr: Expr,
     },
     Return {
-        // loc:   Location, // loc::RETURN
-        value: Expr,
+        expr: Expr,
     },
     Expr {
-        // loc:        Location, //expression 의 첫 토큰
-        expression: Expr,
+        expr: Expr,
     },
 }
-// impl Node for Stmt {
-//     fn as_any(&self) -> &dyn Any {
-//         self
-//     }
-// }
 
 #[derive(Debug, Clone)]
 pub struct Program {
     pub stmts: Vec<Stmt>,
 }
-// impl Node for Program {
-//     fn as_any(&self) -> &dyn Any {
-//         self
-//     }
-// }

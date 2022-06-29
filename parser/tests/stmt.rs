@@ -1,38 +1,295 @@
-// use ast::Identifier;
-// use parser::Parser;
+use ast::*;
+use lexer::token::{Token, TokenType};
+use parser::*;
 
-// #[test]
-// fn test_let() {
-//     let input = "
-//             let five = 5;
-//             let ten = 10;
-//             let result = add(five, ten);
-//         ";
+macro_rules! loc {
+    ($row: expr, $column: expr) => {
+        Location::new($row, $column)
+    };
+}
+macro_rules! strf {
+    ($str: expr) => {
+        String::from($str)
+    };
+}
 
-//     let expected_ident: Vec<&str> = vec!["five", "ten", "result"];
+fn error(curr: Token, code: &str, msg: String) -> String {
+    format!(
+        "Line {}:{} {} - {}, found {}",
+        curr.row, curr.column, code, msg, curr
+    )
+}
 
-//     let program = Parser::parse(input);
+#[test]
+fn parse_empty_stmt() {
+    let input = "
+    
+1
+2;
 
-//     assert_eq!(program.statements.len(), expected_ident.len());
+3;;
+;;;;a
+;
+    b
+";
 
-//     for (i, exp) in expected_ident.iter().enumerate() {
-//         let stmt = &program.statements[i];
+    let expected: Vec<Stmt> = vec![
+        Stmt::Expr {
+            expr: Expr::Int {
+                loc:   loc!(3, 1),
+                value: 1,
+            },
+        },
+        Stmt::Expr {
+            expr: Expr::Int {
+                loc:   loc!(4, 1),
+                value: 2,
+            },
+        },
+        Stmt::Expr {
+            expr: Expr::Int {
+                loc:   loc!(6, 1),
+                value: 3,
+            },
+        },
+        Stmt::Expr {
+            expr: Expr::Ident {
+                loc:  loc!(7, 5),
+                name: strf!("a"),
+            },
+        },
+        Stmt::Expr {
+            expr: Expr::Ident {
+                loc:  loc!(9, 5),
+                name: strf!("b"),
+            },
+        },
+    ];
 
-//         match stmt {
-//             ast::Statement::Let {
-//                 // token,
-//                 name,
-//                 value,
-//             } => {
-//                 // assert_eq!(*token, Token::Let);
-//                 assert_eq!(name, exp);
-//                 // assert_eq!(name.value, exp);
-//             }
-//             _ => panic!("Not a Let statement"),
-//         };
-//     }
-// }
-// /*
+    let program = Parser::new(input).parse().unwrap();
+
+    assert_eq!(program.stmts.len(), expected.len());
+
+    for (stmt, exp) in program.stmts.iter().zip(expected.iter()) {
+        assert_eq!(stmt, exp);
+    }
+}
+
+#[test]
+fn parse_let_stmt() {
+    let input = "
+let five = 5;
+let ten1 = ten2;
+";
+
+    let expected: Vec<Stmt> = vec![
+        Stmt::Let {
+            name: Expr::Ident {
+                loc:  loc!(2, 5),
+                name: strf!("five"),
+            },
+            expr: Expr::Int {
+                loc:   loc!(2, 12),
+                value: 5,
+            },
+        },
+        Stmt::Let {
+            name: Expr::Ident {
+                loc:  loc!(3, 5),
+                name: strf!("ten1"),
+            },
+            expr: Expr::Ident {
+                loc:  loc!(3, 12),
+                name: strf!("ten2"),
+            },
+        },
+    ];
+
+    let program = Parser::new(input).parse().unwrap();
+
+    assert_eq!(program.stmts.len(), expected.len());
+
+    for (stmt, exp) in program.stmts.iter().zip(expected.iter()) {
+        assert_eq!(stmt, exp);
+    }
+}
+
+#[test]
+fn parse_let_stmt_error() {
+    let input = "
+let five = +;
+    let = ten2;
+let b = 3;
+let a 5;
+";
+
+    let expected: Vec<String> = vec![
+        error(
+            Token::new(TokenType::Plus, "+", 2, 12),
+            "PAR:3001",
+            format!("Cannot parse prefix"),
+        ),
+        error(
+            Token::new(TokenType::Assign, "=", 3, 9),
+            "PAR:3011",
+            format!("expected {}", TokenType::Ident),
+        ),
+        error(
+            Token::new(TokenType::Int, "5", 5, 7),
+            "PAR:2012",
+            format!("expected {}", TokenType::Assign),
+        ),
+    ];
+
+    let program = Parser::new(input).parse().unwrap_err();
+
+    assert_eq!(program.len(), expected.len());
+
+    for (stmt, exp) in program.iter().zip(expected.iter()) {
+        assert_eq!(stmt, exp);
+    }
+}
+
+#[test]
+fn parse_return_stmt() {
+    let input = "
+return 5;
+    return a
+    a
+    return b;
+";
+
+    let expected: Vec<Stmt> = vec![
+        Stmt::Return {
+            expr: Expr::Int {
+                loc:   loc!(2, 8),
+                value: 5,
+            },
+        },
+        Stmt::Return {
+            expr: Expr::Ident {
+                loc:  loc!(3, 12),
+                name: strf!("a"),
+            },
+        },
+        Stmt::Expr {
+            expr: Expr::Ident {
+                loc:  loc!(4, 5),
+                name: strf!("a"),
+            },
+        },
+        Stmt::Return {
+            expr: Expr::Ident {
+                loc:  loc!(5, 12),
+                name: strf!("b"),
+            },
+        },
+    ];
+
+    let program = Parser::new(input).parse().unwrap();
+
+    assert_eq!(program.stmts.len(), expected.len());
+
+    for (stmt, exp) in program.stmts.iter().zip(expected.iter()) {
+        assert_eq!(stmt, exp);
+    }
+}
+
+#[test]
+fn parse_expr_stmt() {
+    let input = "
+    a
+    b;
+    3
+    4
+";
+
+    let expected: Vec<Stmt> = vec![
+        Stmt::Expr {
+            expr: Expr::Ident {
+                loc:  loc!(2, 5),
+                name: strf!("a"),
+            },
+        },
+        Stmt::Expr {
+            expr: Expr::Ident {
+                loc:  loc!(3, 5),
+                name: strf!("b"),
+            },
+        },
+        Stmt::Expr {
+            expr: Expr::Int {
+                loc:   loc!(4, 5),
+                value: 3,
+            },
+        },
+        Stmt::Expr {
+            expr: Expr::Int {
+                loc:   loc!(5, 5),
+                value: 4,
+            },
+        },
+    ];
+
+    let program = Parser::new(input).parse().unwrap();
+
+    assert_eq!(program.stmts.len(), expected.len());
+
+    for (stmt, exp) in program.stmts.iter().zip(expected.iter()) {
+        assert_eq!(stmt, exp);
+    }
+}
+
+#[test]
+fn parse_block_stmts() {
+    let input = "{
+    let b = 3;
+    ;;;;;b;;;;;
+    4
+    return b;
+    }";
+
+    let expected: Vec<Stmt> = vec![
+        Stmt::Let {
+            name: Expr::Ident {
+                loc:  loc!(2, 9),
+                name: strf!("b"),
+            },
+            expr: Expr::Int {
+                loc:   loc!(2, 13),
+                value: 3,
+            },
+        },
+        Stmt::Expr {
+            expr: Expr::Ident {
+                loc:  loc!(3, 10),
+                name: strf!("b"),
+            },
+        },
+        Stmt::Expr {
+            expr: Expr::Int {
+                loc:   loc!(4, 5),
+                value: 4,
+            },
+        },
+        Stmt::Return {
+            expr: Expr::Ident {
+                loc:  loc!(5, 12),
+                name: strf!("b"),
+            },
+        },
+    ];
+
+    let block_stmts = Parser::new(input).parse_block_stmts().unwrap();
+
+    assert_eq!(block_stmts.len(), expected.len());
+
+    for (stmt, exp) in block_stmts.iter().zip(expected.iter()) {
+        assert_eq!(stmt, exp);
+    }
+}
+
+/*
 
 // #[test]
 // fn test_return() {

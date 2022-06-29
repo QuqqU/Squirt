@@ -1,85 +1,89 @@
-use ast::Location;
 use lexer::token::TokenType;
 
-use crate::{try_parse, PartParsingResult};
-
-use super::Parser;
+use crate::ensure_curr;
+use crate::try_parse;
+use crate::Parser;
+use crate::PartParsingResult;
 use crate::Priority;
-// use crate::parser::try_parse;
 
 impl<'a> Parser<'a> {
-    pub fn parse_statement(&mut self) -> PartParsingResult<ast::Stmt> {
+    pub(super) fn parse_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
         let stmt = match self.curr_token.token_type {
-            TokenType::Let => try_parse!(self, parse_let_statement),
-            // self.parse_let_statement(),
-            TokenType::Return => try_parse!(self, parse_return_statement),
-            // self.parse_return_statement(),
-            _ => try_parse!(self, parse_expr_statement),
-            //self.parse_expr_statement(),
-            // _ => todo!(),
+            TokenType::Let => try_parse!(self, parse_let_stmt),
+            TokenType::Return => try_parse!(self, parse_return_stmt),
+            _ => try_parse!(self, parse_expr_stmt),
         };
 
         Ok(stmt)
     }
 
-    pub fn parse_let_statement(&mut self) -> PartParsingResult<ast::Stmt> {
-        // let token_type = self.curr_token.token_type;
+    // { stmt1; stmt2; }
+    pub fn parse_block_stmts(&mut self) -> PartParsingResult<Vec<ast::Stmt>> {
+        // {
+        ensure_curr!(self, "PAR:2001", TokenType::Lbrace);
 
-        if !self.expect_next(TokenType::Ident, "PAR0010") {
-            // panic!("PAR0001: No ident after LET");
-            return Err(());
-            // if error return null
+        // stmts
+        let mut block_stmts = vec![];
+        while self.curr_token.token_type != TokenType::Rbrace
+            && self.curr_token.token_type != TokenType::Eof
+        {
+            while self.curr_token.token_type == TokenType::Semicolon {
+                self.next_token();
+            }
+
+            if let Some(stmt) = self.parse_stmt().ok() {
+                block_stmts.push(stmt);
+            }
+            else {
+                self.skip_stmt();
+            }
         }
 
-        let var_name = ast::Expr::Ident {
-            // token: self.curr_token.token_type,
-            // value: self.curr_token.literal.clone(),
-            loc:  Location::new(self.curr_token.row, self.curr_token.column),
-            name: self.curr_token.literal.clone(),
-        };
+        // }
+        ensure_curr!(self, "PAR:2002", TokenType::Rbrace);
 
-        if !self.expect_next(TokenType::Assign, "PAR0011") {
-            // panic!("PAR0002: No ASSIGN sign after ident");
-            return Err(());
-            // if error return null
-        }
-        self.next_token();
+        Ok(block_stmts)
+    }
 
-        let value = try_parse!(self, parse_expression, Priority::Lowest);
-        // self.parse_expression(Priority::Lowest);
+    pub(super) fn parse_let_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
+        // let
+        ensure_curr!(self, "PAR:2011", TokenType::Let);
+
+        // ident
+        let name = try_parse!(self, parse_ident);
+
+        // =
+        ensure_curr!(self, "PAR:2012", TokenType::Assign);
+
+        // expr
+        let expr = try_parse!(self, parse_expr, Priority::Lowest);
+
+        // ;(optional)
         self.next_if(TokenType::Semicolon);
 
-        let stmt = ast::Stmt::Let {
-            // loc: Location,
-            name: var_name,
-            value,
-        };
-
-        Ok(stmt)
+        Ok(ast::Stmt::Let { name, expr })
     }
 
-    pub fn parse_return_statement(&mut self) -> PartParsingResult<ast::Stmt> {
-        // let token_type = &self.curr_token.token_type;
-
+    pub(super) fn parse_return_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
         // return
-        self.next_token();
+        ensure_curr!(self, "PAR:2021", TokenType::Return);
 
-        let value = try_parse!(self, parse_expression, Priority::Lowest);
-        // let value = self.parse_expression(Priority::Lowest);
+        // expr
+        let expr = try_parse!(self, parse_expr, Priority::Lowest);
+
+        // ;(optional)
         self.next_if(TokenType::Semicolon);
 
-        let stmt = ast::Stmt::Return { value };
-
-        Ok(stmt)
+        Ok(ast::Stmt::Return { expr })
     }
 
-    pub fn parse_expr_statement(&mut self) -> PartParsingResult<ast::Stmt> {
-        // let token_type = &self.curr_token.token_type;
-        let expr = try_parse!(self, parse_expression, Priority::Lowest);
+    pub(super) fn parse_expr_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
+        // expr
+        let expr = try_parse!(self, parse_expr, Priority::Lowest);
+
+        // ;(optional)
         self.next_if(TokenType::Semicolon);
 
-        let stmt = ast::Stmt::Expr { expression: expr };
-
-        Ok(stmt)
+        Ok(ast::Stmt::Expr { expr })
     }
 }

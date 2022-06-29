@@ -1,6 +1,5 @@
 use super::token::{look_up_ident, Token, TokenType};
 use std::{iter::Peekable, str::Chars};
-
 pub struct Lexer<'a> {
     pub input: Peekable<Chars<'a>>,
     ch:        char,
@@ -110,7 +109,7 @@ impl<'a> Lexer<'a> {
 
     fn read_ident(&mut self) -> String {
         let mut s = String::new();
-        while self.is_letter() {
+        while self.is_letter() || (!s.is_empty() && self.is_digit()) {
             s.push(self.ch);
             self.read_char();
         }

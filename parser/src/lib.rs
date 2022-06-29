@@ -1,6 +1,5 @@
 mod expression;
 mod parser;
-
 mod statement;
 
 pub use crate::parser::Parser;
@@ -25,19 +24,20 @@ macro_rules! try_parse {
 }
 
 #[macro_export]
-macro_rules! ensure_curr {
-    ($self:ident, $exp:expr, $code:expr) => {
-        if !$self.verify_curr($exp, $code) {
-            return Err(());
-        }
-        $self.next_token();
+macro_rules! verify_curr {
+    ($self:ident, $code:expr, $($exp:expr),+) => {
+        $(
+            if !$self.verify_curr($code, $exp) {
+                return Err(());
+            }
+        )+
     };
 }
 
 #[macro_export]
-macro_rules! ensure_next {
-    ($self:ident, $exp:expr, $code:expr) => {
-        if !$self.expect_next($exp, $code) {
+macro_rules! ensure_curr {
+    ($self:ident, $code:expr, $exp:expr) => {
+        if !$self.verify_curr($code, $exp) {
             return Err(());
         }
         $self.next_token();

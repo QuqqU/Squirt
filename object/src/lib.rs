@@ -1,7 +1,7 @@
 mod environment;
+use ast;
 pub use environment::*;
 
-use ast;
 use std::any::Any;
 use std::cell::RefCell;
 use std::fmt::Debug;

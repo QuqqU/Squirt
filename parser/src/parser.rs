@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::mem;
 
-use crate::ParsingResult;
-use crate::{InfixParseFn, PrefixParseFn};
-use ast::{self, InfixType, PrefixType};
+use ast::{InfixType, PrefixType};
 use lexer::token::{Token, TokenType};
 use lexer::Lexer;
+
+use crate::{InfixParseFn, ParsingResult, PrefixParseFn};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Priority {
@@ -19,13 +19,13 @@ pub enum Priority {
     Call,
 }
 
-pub struct ParserSettings {
+pub(super) struct ParserSettings {
     pub precedences:        HashMap<TokenType, Priority>,
     pub prefix_parse_funcs: HashMap<TokenType, PrefixParseFn>,
     pub infix_parse_funcs:  HashMap<TokenType, InfixParseFn>,
 }
 impl ParserSettings {
-    pub fn set() -> Self {
+    fn new() -> Self {
         Self {
             precedences:        HashMap::from([
                 (TokenType::Assign, Priority::Assign),
@@ -48,12 +48,9 @@ impl ParserSettings {
 pub struct Parser<'a> {
     lexer:                 Lexer<'a>,
     pub(crate) curr_token: Token,
-    pub(crate) next_token: Token,
-    errors:                Vec<String>,
+    next_token:            Token,
+    pub(super) errors:     Vec<String>,
     pub(crate) settings:   ParserSettings,
-    // pub precedences:        HashMap<TokenType, Priority>,
-    // pub prefix_parse_funcs: HashMap<TokenType, PrefixParseFn>,
-    // pub infix_parse_funcs:  HashMap<TokenType, InfixParseFn>,
 }
 
 impl<'a> Parser<'a> {
@@ -62,7 +59,7 @@ impl<'a> Parser<'a> {
 
         let ctoken = l.next_token();
         let ntoken = l.next_token();
-        let settings = ParserSettings::set();
+        let settings = ParserSettings::new();
         let mut parser = Self {
             lexer: l,
             curr_token: ctoken,
@@ -73,40 +70,63 @@ impl<'a> Parser<'a> {
 
         parser.register_prefix(TokenType::Ident, |p| p.parse_ident());
         parser.register_prefix(TokenType::Int, |p| p.parse_int());
-        parser.register_prefix(TokenType::Bang, |p| p.parse_prefix_expression());
-        parser.register_prefix(TokenType::Minus, |p| p.parse_prefix_expression());
+        parser.register_prefix(TokenType::Bang, |p| p.parse_prefix_expr());
+        parser.register_prefix(TokenType::Minus, |p| p.parse_prefix_expr());
         parser.register_prefix(TokenType::True, |p| p.parse_bool());
         parser.register_prefix(TokenType::False, |p| p.parse_bool());
-        parser.register_prefix(TokenType::Lparen, |p| p.parse_grouped_expression());
-        parser.register_prefix(TokenType::If, |p| p.parse_if_expression());
+        parser.register_prefix(TokenType::Lparen, |p| p.parse_grouped_expr());
+        parser.register_prefix(TokenType::If, |p| p.parse_if_expr());
 
-        parser.register_infix(TokenType::Plus, |p, a| p.parse_infix_expression(a));
-        parser.register_infix(TokenType::Minus, |p, a| p.parse_infix_expression(a));
-        parser.register_infix(TokenType::Asterisk, |p, a| p.parse_infix_expression(a));
-        parser.register_infix(TokenType::Slash, |p, a| p.parse_infix_expression(a));
-        parser.register_infix(TokenType::Lt, |p, a| p.parse_infix_expression(a));
-        parser.register_infix(TokenType::Gt, |p, a| p.parse_infix_expression(a));
-        parser.register_infix(TokenType::Eq, |p, a| p.parse_infix_expression(a));
-        parser.register_infix(TokenType::Neq, |p, a| p.parse_infix_expression(a));
-        parser.register_infix(TokenType::Assign, |p, a| p.parse_infix_expression(a));
-
-        parser.register_prefix(TokenType::Func, |p| p.parse_function_literal());
-        parser.register_infix(TokenType::Lparen, |p, a| {
-            p.parse_function_call_expression(a)
-        });
+        parser.register_infix(TokenType::Plus, |p, a| p.parse_infix_expr(a));
+        parser.register_infix(TokenType::Minus, |p, a| p.parse_infix_expr(a));
+        parser.register_infix(TokenType::Asterisk, |p, a| p.parse_infix_expr(a));
+        parser.register_infix(TokenType::Slash, |p, a| p.parse_infix_expr(a));
+        parser.register_infix(TokenType::Lt, |p, a| p.parse_infix_expr(a));
+        parser.register_infix(TokenType::Gt, |p, a| p.parse_infix_expr(a));
+        parser.register_infix(TokenType::Eq, |p, a| p.parse_infix_expr(a));
+        parser.register_infix(TokenType::Neq, |p, a| p.parse_infix_expr(a));
+        parser.register_infix(TokenType::Assign, |p, a| p.parse_infix_expr(a));
 
         parser
     }
 
     pub fn parse(&mut self) -> ParsingResult<ast::Program> {
-        self.parse_program()
+        let mut program = ast::Program { stmts: vec![] };
+        while self.curr_token.token_type != TokenType::Eof {
+            while self.curr_token.token_type == TokenType::Semicolon {
+                self.next_token();
+            }
+
+            if let Some(stmt) = self.parse_stmt().ok() {
+                program.stmts.push(stmt);
+            }
+            else {
+                self.skip_stmt();
+            }
+        }
+
+        if self.errors.is_empty() {
+            Ok(program)
+        }
+        else {
+            Err(self.errors.clone())
+        }
     }
 
     pub fn reset(&mut self, input: &'a str) {
         self.lexer.reset(input);
-        self.next_token();
-        self.next_token();
+        self.curr_token = self.lexer.next_token();
+        self.next_token = self.lexer.next_token();
         self.errors = vec![];
+    }
+
+    pub fn skip_stmt(&mut self) {
+        while self.curr_token.token_type != TokenType::Semicolon
+            && self.curr_token.token_type != TokenType::Eof
+        {
+            self.next_token();
+        }
+        self.next_token();
     }
 
     fn register_prefix(&mut self, token_type: TokenType, prefix_parse_fn: PrefixParseFn) {
@@ -121,10 +141,9 @@ impl<'a> Parser<'a> {
             .insert(token_type, infix_parse_fn);
     }
 
+    #[inline]
     pub fn next_token(&mut self) {
         self.curr_token = mem::replace(&mut self.next_token, self.lexer.next_token())
-        // self.curr_token = self.next_token;
-        // self.next_token = self.lexer.next_token();
     }
 
     pub fn next_if(&mut self, curr_token_type: TokenType) -> bool {
@@ -137,48 +156,29 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // pub fn next_if(&mut self, expected_type: TokenType) {
-    //     if self.next_token.token_type == expected_type {
-    //         self.next_token();
-    //     }
-    // }
-
     #[inline]
-    pub fn verify_curr(&mut self, checked_type: TokenType, code: &str) -> bool {
-        if self.curr_token.token_type == checked_type {
-            self.next_token();
+    pub fn verify_curr(&mut self, code: &str, curr_token_type: TokenType) -> bool {
+        if self.curr_token.token_type == curr_token_type {
             true
         }
         else {
-            // if error append errros
-            self.raise_error(code, checked_type);
+            self.raise_error(code, curr_token_type);
             false
         }
     }
+}
 
-    #[inline]
-    pub fn expect_next(&mut self, expected_type: TokenType, code: &str) -> bool {
-        if self.next_token.token_type == expected_type {
-            // self.next_token();
-            true
-        }
-        else {
-            // if error append errros
-            self.raise_error(code, expected_type);
-            false
-        }
-    }
-
-    pub fn raise_error(&mut self, code: &str, expected: TokenType) {
-        let found = &self.next_token;
+impl<'a> Parser<'a> {
+    pub(crate) fn raise_error(&mut self, code: &str, expected: TokenType) {
+        let found = &self.curr_token;
         let err = format!(
-            "Line {}:{} {}: expected {}, found {}",
+            "Line {}:{} {} - expected {}, found {}",
             found.row, found.column, code, expected, found
         );
         self.errors.push(err);
     }
 
-    pub fn token_2_prefix(token: TokenType) -> PrefixType {
+    pub(crate) fn token_2_prefix(token: TokenType) -> PrefixType {
         match token {
             TokenType::Minus => PrefixType::Minus,
             TokenType::Bang => PrefixType::Bang,
@@ -186,7 +186,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn token_2_infix(token: TokenType) -> InfixType {
+    pub(crate) fn token_2_infix(token: TokenType) -> InfixType {
         match token {
             TokenType::Assign => InfixType::Assign,
             TokenType::Plus => InfixType::Plus,
@@ -198,25 +198,6 @@ impl<'a> Parser<'a> {
             TokenType::Eq => InfixType::Eq,
             TokenType::Neq => InfixType::Neq,
             _ => unreachable!("123"),
-        }
-    }
-}
-
-impl<'a> Parser<'a> {
-    fn parse_program(&mut self) -> ParsingResult<ast::Program> {
-        let mut program = ast::Program { stmts: vec![] };
-        while self.curr_token.token_type != TokenType::Eof {
-            if let Some(stmt) = self.parse_statement().ok() {
-                program.stmts.push(stmt);
-            }
-            self.next_token();
-        }
-
-        if self.errors.is_empty() {
-            Ok(program)
-        }
-        else {
-            Err(self.errors.clone())
         }
     }
 }
