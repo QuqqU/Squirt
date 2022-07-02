@@ -1,12 +1,12 @@
 use ast::Location;
 use lexer::token::TokenType;
 
-use crate::parser::Parser;
+use super::Parser;
 use crate::{ensure_curr, verify_curr, Priority};
 use crate::{try_parse, PartParsingResult};
 
 impl<'a> Parser<'a> {
-    pub fn parse_expr(&mut self, priority: Priority) -> PartParsingResult<ast::Expr> {
+    pub(super) fn parse_expr(&mut self, priority: Priority) -> PartParsingResult<ast::Expr> {
         // prefix & left
         let prefix = self
             .settings
@@ -31,8 +31,7 @@ impl<'a> Parser<'a> {
             let infix = self
                 .settings
                 .infix_parse_funcs
-                .get(&self.curr_token.token_type)
-                .cloned();
+                .get(&self.curr_token.token_type);
 
             let infix = match infix {
                 Some(i) => i,
@@ -53,39 +52,29 @@ impl<'a> Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub fn curr_precedence(&self) -> Priority {
+    pub(super) fn curr_precedence(&self) -> Priority {
         let p = self.settings.precedences.get(&self.curr_token.token_type);
-        if let Some(p) = p {
-            p.clone()
+        if let Some(&p) = p {
+            p
         }
         else {
             Priority::Lowest
         }
     }
-
-    // pub fn next_precedence(&self) -> Priority {
-    //     let p = self.settings.precedences.get(&self.next_token.token_type);
-    //     if let Some(p) = p {
-    //         p.clone()
-    //     }
-    //     else {
-    //         Priority::Lowest
-    //     }
-    // }
 }
 
 impl<'a> Parser<'a> {
-    pub fn parse_ident(&mut self) -> PartParsingResult<ast::Expr> {
+    pub(super) fn parse_ident(&mut self) -> PartParsingResult<ast::Expr> {
         verify_curr!(self, "PAR:3011", TokenType::Ident);
 
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
-        let name = self.curr_token.literal.clone();
+        let name = std::mem::take(&mut self.curr_token.literal);
         self.next_token();
 
         Ok(ast::Expr::Ident { loc, name })
     }
 
-    pub fn parse_int(&mut self) -> PartParsingResult<ast::Expr> {
+    pub(super) fn parse_int(&mut self) -> PartParsingResult<ast::Expr> {
         verify_curr!(self, "PAR:3012", TokenType::Int);
 
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
@@ -95,7 +84,7 @@ impl<'a> Parser<'a> {
         Ok(ast::Expr::Int { loc, value })
     }
 
-    pub fn parse_bool(&mut self) -> PartParsingResult<ast::Expr> {
+    pub(super) fn parse_bool(&mut self) -> PartParsingResult<ast::Expr> {
         verify_curr!(self, "PAR:3013", TokenType::True, TokenType::False);
 
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
@@ -105,7 +94,7 @@ impl<'a> Parser<'a> {
         Ok(ast::Expr::Bool { loc, value })
     }
 
-    pub fn parse_prefix_expr(&mut self) -> PartParsingResult<ast::Expr> {
+    pub(super) fn parse_prefix_expr(&mut self) -> PartParsingResult<ast::Expr> {
         verify_curr!(self, "PAR:3021", TokenType::Minus, TokenType::Bang);
 
         // prefix operator
@@ -123,7 +112,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    pub fn parse_infix_expr(&mut self, left: ast::Expr) -> PartParsingResult<ast::Expr> {
+    pub(super) fn parse_infix_expr(&mut self, left: ast::Expr) -> PartParsingResult<ast::Expr> {
         verify_curr!(
             self,
             "PAR:3022",
@@ -158,7 +147,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    pub fn parse_grouped_expr(&mut self) -> PartParsingResult<ast::Expr> {
+    pub(super) fn parse_grouped_expr(&mut self) -> PartParsingResult<ast::Expr> {
         // (
         ensure_curr!(self, "PAR:3031", TokenType::Lparen);
 
@@ -171,7 +160,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    pub fn parse_if_expr(&mut self) -> PartParsingResult<ast::Expr> {
+    pub(super) fn parse_if_expr(&mut self) -> PartParsingResult<ast::Expr> {
         // if
         verify_curr!(self, "PAR:3041", TokenType::If);
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
@@ -203,7 +192,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    /*     pub fn parse_function_literal(&mut self) -> PartParsingResult<ast::Expr> {
+    /*     pub(super) fn parse_function_literal(&mut self) -> PartParsingResult<ast::Expr> {
         // fn
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
         // let token = self.curr_token;
@@ -226,7 +215,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    pub fn parse_function_call_expr(
+    pub(super) fn parse_function_call_expr(
         &mut self,
         func: ast::Expr,
     ) -> PartParsingResult<ast::Expr> {
@@ -243,7 +232,7 @@ impl<'a> Parser<'a> {
 
     //////////////////
 
-    pub fn parse_function_parameters(&mut self) -> PartParsingResult<Vec<ast::Expr>> {
+    pub(super) fn parse_function_parameters(&mut self) -> PartParsingResult<Vec<ast::Expr>> {
         // Expr::Ident
         let mut params = vec![];
 
@@ -273,7 +262,7 @@ impl<'a> Parser<'a> {
         Ok(params)
     }
 
-    pub fn parse_function_arguments(&mut self) -> PartParsingResult<Vec<ast::Expr>> {
+    pub(super) fn parse_function_arguments(&mut self) -> PartParsingResult<Vec<ast::Expr>> {
         // (
         // let token = self.curr_token.token_type;
         self.next_token();

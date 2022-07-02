@@ -45,7 +45,7 @@ impl<'a> Parser<'a> {
         Ok(block_stmts)
     }
 
-    pub(super) fn parse_let_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
+    fn parse_let_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
         // let
         ensure_curr!(self, "PAR:2011", TokenType::Let);
 
@@ -64,7 +64,7 @@ impl<'a> Parser<'a> {
         Ok(ast::Stmt::Let { name, expr })
     }
 
-    pub(super) fn parse_return_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
+    fn parse_return_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
         // return
         ensure_curr!(self, "PAR:2021", TokenType::Return);
 
@@ -77,7 +77,7 @@ impl<'a> Parser<'a> {
         Ok(ast::Stmt::Return { expr })
     }
 
-    pub(super) fn parse_expr_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
+    fn parse_expr_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
         // expr
         let expr = try_parse!(self, parse_expr, Priority::Lowest);
 

@@ -8,7 +8,7 @@ use lexer::Lexer;
 use crate::{InfixParseFn, ParsingResult, PrefixParseFn};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Priority {
+pub(super) enum Priority {
     Lowest,
     Assign,
     Equal,
@@ -25,7 +25,7 @@ pub(super) struct ParserSettings {
     pub infix_parse_funcs:  HashMap<TokenType, InfixParseFn>,
 }
 impl ParserSettings {
-    fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             precedences:        HashMap::from([
                 (TokenType::Assign, Priority::Assign),
@@ -46,11 +46,11 @@ impl ParserSettings {
 }
 
 pub struct Parser<'a> {
-    lexer:                 Lexer<'a>,
-    pub(crate) curr_token: Token,
-    next_token:            Token,
+    pub(super) lexer:      Lexer<'a>,
+    pub(super) curr_token: Token,
+    pub(super) next_token: Token,
     pub(super) errors:     Vec<String>,
-    pub(crate) settings:   ParserSettings,
+    pub(super) settings:   ParserSettings,
 }
 
 impl<'a> Parser<'a> {
@@ -120,7 +120,7 @@ impl<'a> Parser<'a> {
         self.errors = vec![];
     }
 
-    pub fn skip_stmt(&mut self) {
+    pub(super) fn skip_stmt(&mut self) {
         while self.curr_token.token_type != TokenType::Semicolon
             && self.curr_token.token_type != TokenType::Eof
         {
@@ -142,11 +142,11 @@ impl<'a> Parser<'a> {
     }
 
     #[inline]
-    pub fn next_token(&mut self) {
+    pub(super) fn next_token(&mut self) {
         self.curr_token = mem::replace(&mut self.next_token, self.lexer.next_token())
     }
 
-    pub fn next_if(&mut self, curr_token_type: TokenType) -> bool {
+    pub(super) fn next_if(&mut self, curr_token_type: TokenType) -> bool {
         if self.curr_token.token_type == curr_token_type {
             self.next_token();
             true
@@ -157,7 +157,7 @@ impl<'a> Parser<'a> {
     }
 
     #[inline]
-    pub fn verify_curr(&mut self, code: &str, curr_token_type: TokenType) -> bool {
+    pub(super) fn verify_curr(&mut self, code: &str, curr_token_type: TokenType) -> bool {
         if self.curr_token.token_type == curr_token_type {
             true
         }
