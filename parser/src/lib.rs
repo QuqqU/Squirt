@@ -1,9 +1,10 @@
 mod expression;
 mod parser;
+mod parsersettings;
 mod statement;
 
 pub use crate::parser::Parser;
-use crate::parser::Priority;
+use crate::parsersettings::Priority;
 
 pub type ParsingResult<T> = Result<T, Vec<String>>;
 type PartParsingResult<T> = Result<T, ()>;
@@ -24,20 +25,33 @@ macro_rules! try_parse {
 }
 
 #[macro_export]
-macro_rules! verify_curr {
-    ($self:ident, $code:expr, $($exp:expr),+) => {
-        $(
-            if !$self.verify_curr($code, $exp) {
-                return Err(());
-            }
-        )+
+macro_rules! check_curr {
+    ($self:ident, $code:expr, $exp:expr) => {
+        if !$self.check_curr(&[$exp]) {
+            $self.raise_err($code, &format!("expected {}", $exp));
+            return Err(());
+        }
+    };
+    ($self:ident, $code:expr, $exp_arr:expr, $err:expr) => {
+        if !$self.check_curr($exp_arr) {
+            $self.raise_err($code, $err);
+            return Err(());
+        }
     };
 }
 
 #[macro_export]
 macro_rules! ensure_curr {
     ($self:ident, $code:expr, $exp:expr) => {
-        if !$self.verify_curr($code, $exp) {
+        if !$self.check_curr(&[$exp]) {
+            $self.raise_err($code, &format!("expected {}", $exp));
+            return Err(());
+        }
+        $self.next_token();
+    };
+    ($self:ident, $code:expr, $exp_arr:expr, $err:expr) => {
+        if !$self.check_curr($exp_arr) {
+            $self.raise_err($code, $err);
             return Err(());
         }
         $self.next_token();

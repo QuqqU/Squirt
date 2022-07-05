@@ -1,8 +1,8 @@
-use ast::Location;
+use ast::{InfixType, Location, PrefixType};
 use lexer::token::TokenType;
 
 use super::Parser;
-use crate::{ensure_curr, verify_curr, Priority};
+use crate::{check_curr, ensure_curr, Priority};
 use crate::{try_parse, PartParsingResult};
 
 impl<'a> Parser<'a> {
@@ -16,10 +16,7 @@ impl<'a> Parser<'a> {
         let prefix = match prefix {
             Some(p) => p,
             None => {
-                self.errors.push(format!(
-                    "Line {}:{} PAR:3001 - Cannot parse prefix, found {}",
-                    self.curr_token.row, self.curr_token.column, self.curr_token,
-                ));
+                self.raise_err("PAR:3001", "Cannot parse prefix");
                 return Err(());
             }
         };
@@ -36,10 +33,7 @@ impl<'a> Parser<'a> {
             let infix = match infix {
                 Some(i) => i,
                 None => {
-                    self.errors.push(format!(
-                        "Line {}:{} PAR:3002 - Cannot parse infix, found {}",
-                        self.curr_token.row, self.curr_token.column, self.curr_token,
-                    ));
+                    self.raise_err("PAR:3002", "Cannot parse infix");
                     return Err(());
                 }
             };
@@ -52,20 +46,40 @@ impl<'a> Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub(super) fn curr_precedence(&self) -> Priority {
-        let p = self.settings.precedences.get(&self.curr_token.token_type);
-        if let Some(&p) = p {
-            p
+    #[inline]
+    fn curr_precedence(&self) -> Priority {
+        self.settings.precedence_of(&self.curr_token.token_type)
+    }
+
+    #[inline]
+    fn token_2_prefix(token: TokenType) -> PrefixType {
+        match token {
+            TokenType::Minus => PrefixType::Minus,
+            TokenType::Bang => PrefixType::Bang,
+            _ => unreachable!("PAR:3003 - Cannot transform TokenType to PrefixType"),
         }
-        else {
-            Priority::Lowest
+    }
+
+    #[inline]
+    fn token_2_infix(token: TokenType) -> InfixType {
+        match token {
+            TokenType::Assign => InfixType::Assign,
+            TokenType::Plus => InfixType::Plus,
+            TokenType::Minus => InfixType::Minus,
+            TokenType::Asterisk => InfixType::Asterisk,
+            TokenType::Slash => InfixType::Slash,
+            TokenType::Lt => InfixType::Lt,
+            TokenType::Gt => InfixType::Gt,
+            TokenType::Eq => InfixType::Eq,
+            TokenType::Neq => InfixType::Neq,
+            _ => unreachable!("PAR:3004 - Cannot transform TokenType to InfixType"),
         }
     }
 }
 
 impl<'a> Parser<'a> {
     pub(super) fn parse_ident(&mut self) -> PartParsingResult<ast::Expr> {
-        verify_curr!(self, "PAR:3011", TokenType::Ident);
+        check_curr!(self, "PAR:3011", TokenType::Ident);
 
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
         let name = std::mem::take(&mut self.curr_token.literal);
@@ -75,7 +89,7 @@ impl<'a> Parser<'a> {
     }
 
     pub(super) fn parse_int(&mut self) -> PartParsingResult<ast::Expr> {
-        verify_curr!(self, "PAR:3012", TokenType::Int);
+        check_curr!(self, "PAR:3012", TokenType::Int);
 
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
         let value = self.curr_token.literal.parse().unwrap();
@@ -85,7 +99,12 @@ impl<'a> Parser<'a> {
     }
 
     pub(super) fn parse_bool(&mut self) -> PartParsingResult<ast::Expr> {
-        verify_curr!(self, "PAR:3013", TokenType::True, TokenType::False);
+        check_curr!(
+            self,
+            "PAR:3013",
+            &[TokenType::True, TokenType::False],
+            "expected Boolean"
+        );
 
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
         let value = self.curr_token.token_type == TokenType::True;
@@ -95,7 +114,12 @@ impl<'a> Parser<'a> {
     }
 
     pub(super) fn parse_prefix_expr(&mut self) -> PartParsingResult<ast::Expr> {
-        verify_curr!(self, "PAR:3021", TokenType::Minus, TokenType::Bang);
+        check_curr!(
+            self,
+            "PAR:3021",
+            &[TokenType::Minus, TokenType::Bang],
+            "expected Prefix Operator"
+        );
 
         // prefix operator
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
@@ -113,18 +137,21 @@ impl<'a> Parser<'a> {
     }
 
     pub(super) fn parse_infix_expr(&mut self, left: ast::Expr) -> PartParsingResult<ast::Expr> {
-        verify_curr!(
+        check_curr!(
             self,
             "PAR:3022",
-            TokenType::Assign,
-            TokenType::Plus,
-            TokenType::Minus,
-            TokenType::Asterisk,
-            TokenType::Slash,
-            TokenType::Lt,
-            TokenType::Gt,
-            TokenType::Eq,
-            TokenType::Neq
+            &[
+                TokenType::Assign,
+                TokenType::Plus,
+                TokenType::Minus,
+                TokenType::Asterisk,
+                TokenType::Slash,
+                TokenType::Lt,
+                TokenType::Gt,
+                TokenType::Eq,
+                TokenType::Neq
+            ],
+            "expected Infix Operator"
         );
 
         // left expr
@@ -162,7 +189,7 @@ impl<'a> Parser<'a> {
 
     pub(super) fn parse_if_expr(&mut self) -> PartParsingResult<ast::Expr> {
         // if
-        verify_curr!(self, "PAR:3041", TokenType::If);
+        check_curr!(self, "PAR:3041", TokenType::If);
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
         self.next_token();
 
