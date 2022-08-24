@@ -1,5 +1,5 @@
 use super::token::Token;
-use crate::tokentype::{look_up_ident, TokenType};
+use crate::tokentype::{is_flawless, look_up_ident, TokenType};
 use std::{iter::Peekable, str::Chars};
 pub struct Lexer<'a> {
     pub input: Peekable<Chars<'a>>,
@@ -9,6 +9,16 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
+    pub fn tokenize(input: &'a str) -> Vec<Token> {
+        let mut lexer = Lexer::new(input);
+        let mut tokens = vec![lexer.next_token()];
+        while !is_flawless(tokens.last().unwrap()) {
+            let curr_token = lexer.next_token();
+            tokens.push(curr_token);
+        }
+        tokens
+    }
+
     pub fn new(input: &'a str) -> Self {
         Self {
             input:  input.chars().peekable(),
@@ -16,13 +26,6 @@ impl<'a> Lexer<'a> {
             row:    1,
             column: 0,
         }
-    }
-
-    pub fn reset(&mut self, input: &'a str) {
-        self.input = input.chars().peekable();
-        self.ch = ' ';
-        self.row = 1;
-        self.column = 0;
     }
 
     pub fn next_token(&mut self) -> Token {

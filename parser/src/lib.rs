@@ -47,13 +47,13 @@ macro_rules! consume_curr {
             $self.raise_err($code, &format!("expected {:?}", $exp));
             return Err(());
         }
-        $self.next_token();
+        $self.consume_token();
     };
     ($self:ident, $code:expr, $exp_arr:expr, $err:expr) => {
         if !$self.check_curr($exp_arr) {
             $self.raise_err($code, $err);
             return Err(());
         }
-        $self.next_token();
+        $self.consume_token();
     };
 }

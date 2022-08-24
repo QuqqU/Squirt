@@ -7,9 +7,9 @@ use crate::Parser;
 use crate::PartParsingResult;
 use crate::Priority;
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub(super) fn parse_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
-        let stmt = match self.curr_token.token_type {
+        let stmt = match self.curr_token().token_type {
             TokenType::Let => try_parse!(self, parse_let_stmt),
             TokenType::Return => try_parse!(self, parse_return_stmt),
             _ => try_parse!(self, parse_expr_stmt),
@@ -25,11 +25,11 @@ impl<'a> Parser<'a> {
 
         // stmts
         let mut block_stmts = vec![];
-        while self.curr_token.token_type != TokenType::Rbrace
-            && self.curr_token.token_type != TokenType::Eof
+        while self.curr_token().token_type != TokenType::Rbrace
+            && self.curr_token().token_type != TokenType::Eof
         {
-            while self.curr_token.token_type == TokenType::Semicolon {
-                self.next_token();
+            while self.curr_token().token_type == TokenType::Semicolon {
+                self.consume_token();
             }
 
             if let Some(stmt) = self.parse_stmt().ok() {

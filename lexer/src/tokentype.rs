@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::Token;
+
 #[derive(PartialEq, Eq, Hash)]
 pub enum TokenType {
     Poison,
@@ -76,6 +78,13 @@ pub fn look_up_ident(s: &str) -> TokenType {
         "else" => TokenType::Else,
         "return" => TokenType::Return,
         _ => TokenType::Ident,
+    }
+}
+
+pub fn is_flawless(token: &Token) -> bool {
+    match token.token_type {
+        TokenType::Poison | TokenType::Eof => true,
+        _ => false,
     }
 }
 

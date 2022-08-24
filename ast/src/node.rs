@@ -86,5 +86,5 @@ pub enum Stmt {
 }
 
 pub struct Program {
-    pub stmts: BlockStmts,
+    pub program: Vec<Stmt>,
 }

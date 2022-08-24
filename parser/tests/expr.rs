@@ -1,5 +1,5 @@
 use ast::*;
-use lexer::Token;
+use lexer::{Lexer, Token};
 use parser::*;
 
 macro_rules! strf {
@@ -58,11 +58,12 @@ fn parse_ident() {
         },
     ];
 
-    let program = Parser::new(input).parse().unwrap();
+    let tokens = Lexer::tokenize(input);
+    let ast = Parser::parse(tokens).unwrap();
 
-    assert_eq!(program.stmts.0.len(), expected.len());
+    assert_eq!(ast.program.len(), expected.len());
 
-    for (stmt, exp) in program.stmts.0.iter().zip(expected.iter()) {
+    for (stmt, exp) in ast.program.iter().zip(expected.iter()) {
         assert_eq!(stmt, exp);
     }
 }
@@ -110,11 +111,12 @@ fn parse_int() {
         },
     ];
 
-    let program = Parser::new(input).parse().unwrap();
+    let tokens = Lexer::tokenize(input);
+    let ast = Parser::parse(tokens).unwrap();
 
-    assert_eq!(program.stmts.0.len(), expected.len());
+    assert_eq!(ast.program.len(), expected.len());
 
-    for (stmt, exp) in program.stmts.0.iter().zip(expected.iter()) {
+    for (stmt, exp) in ast.program.iter().zip(expected.iter()) {
         assert_eq!(stmt, exp);
     }
 }
@@ -155,11 +157,12 @@ fn parse_bool() {
         },
     ];
 
-    let program = Parser::new(input).parse().unwrap();
+    let tokens = Lexer::tokenize(input);
+    let ast = Parser::parse(tokens).unwrap();
 
-    assert_eq!(program.stmts.0.len(), expected.len());
+    assert_eq!(ast.program.len(), expected.len());
 
-    for (stmt, exp) in program.stmts.0.iter().zip(expected.iter()) {
+    for (stmt, exp) in ast.program.iter().zip(expected.iter()) {
         assert_eq!(stmt, exp);
     }
 }
@@ -197,10 +200,11 @@ fn parse_if_expr() {
         },
     };
 
-    let program = Parser::new(input).parse().unwrap();
+    let tokens = Lexer::tokenize(input);
+    let ast = Parser::parse(tokens).unwrap();
 
-    assert_eq!(program.stmts.0.len(), 1);
-    assert_eq!(program.stmts.0.first().unwrap(), &expected);
+    assert_eq!(ast.program.len(), 1);
+    assert_eq!(ast.program.first().unwrap(), &expected);
 }
 
 #[test]
@@ -243,10 +247,11 @@ fn parse_if_else_expr() {
         },
     };
 
-    let program = Parser::new(input).parse().unwrap();
+    let tokens = Lexer::tokenize(input);
+    let ast = Parser::parse(tokens).unwrap();
 
-    assert_eq!(program.stmts.0.len(), 1);
-    assert_eq!(program.stmts.0.first().unwrap(), &expected);
+    assert_eq!(ast.program.len(), 1);
+    assert_eq!(ast.program.first().unwrap(), &expected);
 }
 
 #[test]
@@ -327,10 +332,11 @@ fn parse_func_literal_expr() {
         },
     };
 
-    let program = Parser::new(input).parse().unwrap();
+    let tokens = Lexer::tokenize(input);
+    let ast = Parser::parse(tokens).unwrap();
 
-    assert_eq!(program.stmts.0.len(), 1);
-    assert_eq!(program.stmts.0.first().unwrap(), &expected);
+    assert_eq!(ast.program.len(), 1);
+    assert_eq!(ast.program.first().unwrap(), &expected);
 }
 
 #[test]
@@ -375,8 +381,9 @@ fn parse_func_call_expr() {
         },
     };
 
-    let program = Parser::new(input).parse().unwrap();
+    let tokens = Lexer::tokenize(input);
+    let ast = Parser::parse(tokens).unwrap();
 
-    assert_eq!(program.stmts.0.len(), 1);
-    assert_eq!(program.stmts.0.first().unwrap(), &expected);
+    assert_eq!(ast.program.len(), 1);
+    assert_eq!(ast.program.first().unwrap(), &expected);
 }

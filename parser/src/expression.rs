@@ -5,13 +5,13 @@ use super::Parser;
 use crate::{check_curr, consume_curr, Priority};
 use crate::{try_parse, PartParsingResult};
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub(super) fn parse_expr(&mut self, priority: Priority) -> PartParsingResult<ast::Expr> {
         // prefix & left
         let prefix = self
             .settings
             .prefix_parse_funcs
-            .get(&self.curr_token.token_type);
+            .get(&self.curr_token().token_type);
 
         let prefix = match prefix {
             Some(p) => p,
@@ -28,7 +28,7 @@ impl<'a> Parser<'a> {
             let infix = self
                 .settings
                 .infix_parse_funcs
-                .get(&self.curr_token.token_type);
+                .get(&self.curr_token().token_type);
 
             let infix = match infix {
                 Some(i) => i,
@@ -45,10 +45,10 @@ impl<'a> Parser<'a> {
     }
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     #[inline]
     fn curr_precedence(&self) -> Priority {
-        self.settings.precedence_of(&self.curr_token.token_type)
+        self.settings.precedence_of(&self.curr_token().token_type)
     }
 
     #[inline]
@@ -77,13 +77,13 @@ impl<'a> Parser<'a> {
     }
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub(super) fn parse_ident(&mut self) -> PartParsingResult<ast::Expr> {
         check_curr!(self, "PAR:3011", TokenType::Ident);
 
-        let loc = Location::new(self.curr_token.row, self.curr_token.column);
-        let name = std::mem::take(&mut self.curr_token.literal);
-        self.next_token();
+        let loc = Location::new(self.curr_token().row, self.curr_token().column);
+        let name = self.curr_token().literal.clone();
+        self.consume_token();
 
         Ok(ast::Expr::Ident { loc, name })
     }
@@ -91,9 +91,9 @@ impl<'a> Parser<'a> {
     pub(super) fn parse_int(&mut self) -> PartParsingResult<ast::Expr> {
         check_curr!(self, "PAR:3012", TokenType::Int);
 
-        let loc = Location::new(self.curr_token.row, self.curr_token.column);
-        let value = self.curr_token.literal.parse().unwrap();
-        self.next_token();
+        let loc = Location::new(self.curr_token().row, self.curr_token().column);
+        let value = self.curr_token().literal.parse().unwrap();
+        self.consume_token();
 
         Ok(ast::Expr::Int { loc, value })
     }
@@ -106,9 +106,9 @@ impl<'a> Parser<'a> {
             "expected Boolean"
         );
 
-        let loc = Location::new(self.curr_token.row, self.curr_token.column);
-        let value = self.curr_token.token_type == TokenType::True;
-        self.next_token();
+        let loc = Location::new(self.curr_token().row, self.curr_token().column);
+        let value = self.curr_token().token_type == TokenType::True;
+        self.consume_token();
 
         Ok(ast::Expr::Bool { loc, value })
     }
@@ -122,9 +122,9 @@ impl<'a> Parser<'a> {
         );
 
         // prefix operator
-        let loc = Location::new(self.curr_token.row, self.curr_token.column);
-        let operator = Parser::token_2_prefix(&self.curr_token.token_type);
-        self.next_token();
+        let loc = Location::new(self.curr_token().row, self.curr_token().column);
+        let operator = Parser::token_2_prefix(&self.curr_token().token_type);
+        self.consume_token();
 
         // expr
         let right = Box::new(try_parse!(self, parse_expr, Priority::Prefix));
@@ -158,10 +158,10 @@ impl<'a> Parser<'a> {
         let left = Box::new(left);
 
         // infix operator
-        let loc = Location::new(self.curr_token.row, self.curr_token.column);
-        let operator = Parser::token_2_infix(&self.curr_token.token_type);
+        let loc = Location::new(self.curr_token().row, self.curr_token().column);
+        let operator = Parser::token_2_infix(&self.curr_token().token_type);
         let precedence = self.curr_precedence();
-        self.next_token();
+        self.consume_token();
 
         // right expr
         let right = Box::new(try_parse!(self, parse_expr, precedence));
@@ -190,8 +190,8 @@ impl<'a> Parser<'a> {
     pub(super) fn parse_if_expr(&mut self) -> PartParsingResult<ast::Expr> {
         // if
         check_curr!(self, "PAR:3041", TokenType::If);
-        let loc = Location::new(self.curr_token.row, self.curr_token.column);
-        self.next_token();
+        let loc = Location::new(self.curr_token().row, self.curr_token().column);
+        self.consume_token();
 
         // (condition)
         consume_curr!(self, "PAR:3042", TokenType::Lparen);
@@ -218,8 +218,8 @@ impl<'a> Parser<'a> {
     pub(super) fn parse_func_literal_expr(&mut self) -> PartParsingResult<ast::Expr> {
         // fn
         check_curr!(self, "PAR:3081", TokenType::Func);
-        let loc = Location::new(self.curr_token.row, self.curr_token.column);
-        self.next_token();
+        let loc = Location::new(self.curr_token().row, self.curr_token().column);
+        self.consume_token();
 
         // ( params )
         let parameters = try_parse!(self, parse_func_params);
@@ -240,7 +240,7 @@ impl<'a> Parser<'a> {
     ) -> PartParsingResult<ast::Expr> {
         // (
         check_curr!(self, "PAR:3091", TokenType::Lparen);
-        let loc = Location::new(self.curr_token.row, self.curr_token.column);
+        let loc = Location::new(self.curr_token().row, self.curr_token().column);
 
         // ( params )
         let args = try_parse!(self, parse_func_args);

@@ -137,7 +137,7 @@ impl fmt::Debug for Stmt {
 
 impl fmt::Debug for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.stmts)
+        write!(f, "{:?}", self.program)
     }
 }
 

@@ -1,50 +1,38 @@
-use std::mem;
-
-use ast::BlockStmts;
 use lexer::token::Token;
 use lexer::tokentype::TokenType;
-use lexer::Lexer;
 
 use crate::parsersettings::ParserSettings;
 use crate::ParsingResult;
 
-pub struct Parser<'a> {
-    pub(super) lexer:      Lexer<'a>,
-    pub(super) curr_token: Token,
-    pub(super) next_token: Token,
-    pub(super) errors:     Vec<String>,
-    pub(super) settings:   ParserSettings,
+pub struct Parser {
+    tokens:              Vec<Token>,
+    idx:                 usize,
+    errors:              Vec<String>,
+    pub(super) settings: ParserSettings,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(input: &'a str) -> Self {
-        let mut l = Lexer::new(input);
+impl Parser {
+    pub fn parse(tokens: Vec<Token>) -> ParsingResult<ast::Program> {
+        let mut parser = Parser::new(tokens);
+        parser.parse_program()
+    }
 
-        let ctoken = l.next_token();
-        let ntoken = l.next_token();
-        let settings = ParserSettings::new();
-
+    fn new(mut tokens: Vec<Token>) -> Self {
+        tokens.push(Token::new(TokenType::Eof, "\0", 0, 0));
+        let tokens = tokens;
         Self {
-            lexer: l,
-            curr_token: ctoken,
-            next_token: ntoken,
+            tokens,
+            idx: 0,
             errors: vec![],
-            settings,
+            settings: ParserSettings::new(),
         }
     }
 
-    pub fn reset(&mut self, input: &'a str) {
-        self.lexer.reset(input);
-        self.curr_token = self.lexer.next_token();
-        self.next_token = self.lexer.next_token();
-        self.errors = vec![];
-    }
-
-    pub fn parse(&mut self) -> ParsingResult<ast::Program> {
+    fn parse_program(&mut self) -> ParsingResult<ast::Program> {
         let mut program = vec![];
-        while self.curr_token.token_type != TokenType::Eof {
-            while self.curr_token.token_type == TokenType::Semicolon {
-                self.next_token();
+        while self.curr_token().token_type != TokenType::Eof {
+            while self.curr_token().token_type == TokenType::Semicolon {
+                self.consume_token();
             }
 
             if let Some(stmt) = self.parse_stmt().ok() {
@@ -56,32 +44,35 @@ impl<'a> Parser<'a> {
         }
 
         if self.errors.is_empty() {
-            Ok(ast::Program {
-                stmts: BlockStmts(program),
-            })
+            Ok(ast::Program { program })
         }
         else {
-            Err(self.errors.clone())
+            Err(std::mem::take(&mut self.errors))
         }
     }
 
     pub(super) fn skip_stmt(&mut self) {
-        while self.curr_token.token_type != TokenType::Semicolon
-            && self.curr_token.token_type != TokenType::Eof
+        while self.curr_token().token_type != TokenType::Semicolon
+            && self.curr_token().token_type != TokenType::Eof
         {
-            self.next_token();
+            self.consume_token();
         }
-        self.next_token();
+        self.consume_token();
     }
 
     #[inline]
-    pub(super) fn next_token(&mut self) {
-        self.curr_token = mem::replace(&mut self.next_token, self.lexer.next_token())
+    pub(super) fn consume_token(&mut self) {
+        self.idx += 1;
+    }
+
+    #[inline]
+    pub(super) fn curr_token(&self) -> &Token {
+        &self.tokens[self.idx]
     }
 
     pub(super) fn next_if(&mut self, curr_token_type: TokenType) -> bool {
-        if self.curr_token.token_type == curr_token_type {
-            self.next_token();
+        if self.curr_token().token_type == curr_token_type {
+            self.consume_token();
             true
         }
         else {
@@ -90,14 +81,14 @@ impl<'a> Parser<'a> {
     }
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     #[inline]
     pub(super) fn check_curr(&mut self, expected: &[TokenType]) -> bool {
-        expected.contains(&self.curr_token.token_type)
+        expected.contains(&self.curr_token().token_type)
     }
 
     pub(crate) fn raise_err(&mut self, code: &str, err_message: &str) {
-        let found = &self.curr_token;
+        let found = &self.curr_token();
         let err = format!(
             "Line {}:{} {} - {}, found {}",
             found.row, found.column, code, err_message, found

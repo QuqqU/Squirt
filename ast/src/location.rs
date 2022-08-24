@@ -50,9 +50,14 @@ mod init {
     }
 }
 
-#[test]
-fn fmt_dbg() {
-    let expected = "(1, 2)";
-    let dbg_str = format!("{:?}", Location::new(1, 2));
-    assert_eq!(expected, dbg_str)
+#[cfg(test)]
+mod fmt_dbg {
+    use crate::Location;
+
+    #[test]
+    fn location() {
+        let expected = "(1, 2)";
+        let dbg_str = format!("{:?}", Location::new(1, 2));
+        assert_eq!(expected, dbg_str)
+    }
 }
