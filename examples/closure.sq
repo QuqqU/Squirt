@@ -1,0 +1,3 @@
+let closure = fn(x) { fn(y) { x + y } }
+let inner = closure(10)
+inner(5)

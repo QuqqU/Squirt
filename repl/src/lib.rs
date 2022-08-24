@@ -3,13 +3,13 @@ use object::Object;
 use std::io::Write;
 
 fn prompt(name: &str) -> String {
-    let mut line = String::new();
     print!("{}", name);
+
+    let mut line = String::new();
     std::io::stdout().flush().unwrap();
     std::io::stdin()
         .read_line(&mut line)
-        .expect("Error REP0001: Fail to read a line");
-
+        .expect("Error REP:0001: Fail to read a line");
     return line.trim().to_string();
 }
 
