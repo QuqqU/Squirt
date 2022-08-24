@@ -59,6 +59,9 @@ impl ParserSettings {
         p.register_infix(TokenType::Neq, |p, a| p.parse_infix_expr(a));
         p.register_infix(TokenType::Assign, |p, a| p.parse_infix_expr(a));
 
+        p.register_prefix(TokenType::Func, |p| p.parse_func_literal_expr());
+        p.register_infix(TokenType::Lparen, |p, a| p.parse_func_call_expr(a));
+
         p
     }
 

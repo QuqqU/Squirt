@@ -57,9 +57,9 @@ pub enum Expr {
         body:       Vec<Stmt>,
     },
     FuncCall {
-        loc:  Location,  // loc of Lparen
-        func: Box<Expr>, //Expr::FuncLiteral
-        args: Vec<Expr>,
+        loc:   Location,  // loc of Lparen
+        ident: Box<Expr>, //Expr::FuncLiteral
+        args:  Vec<Expr>,
     },
 }
 

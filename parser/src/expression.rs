@@ -2,7 +2,7 @@ use ast::{InfixType, Location, PrefixType};
 use lexer::token::TokenType;
 
 use super::Parser;
-use crate::{check_curr, ensure_curr, Priority};
+use crate::{check_curr, consume_curr, Priority};
 use crate::{try_parse, PartParsingResult};
 
 impl<'a> Parser<'a> {
@@ -176,13 +176,13 @@ impl<'a> Parser<'a> {
 
     pub(super) fn parse_grouped_expr(&mut self) -> PartParsingResult<ast::Expr> {
         // (
-        ensure_curr!(self, "PAR:3031", TokenType::Lparen);
+        consume_curr!(self, "PAR:3031", TokenType::Lparen);
 
         // exprs
         let expr = try_parse!(self, parse_expr, Priority::Lowest);
 
         // )
-        ensure_curr!(self, "PAR:3032", TokenType::Rparen);
+        consume_curr!(self, "PAR:3032", TokenType::Rparen);
 
         Ok(expr)
     }
@@ -194,21 +194,17 @@ impl<'a> Parser<'a> {
         self.next_token();
 
         // (condition)
-        ensure_curr!(self, "PAR:3042", TokenType::Lparen);
+        consume_curr!(self, "PAR:3042", TokenType::Lparen);
         let condition = Box::new(try_parse!(self, parse_expr, Priority::Lowest));
-        ensure_curr!(self, "PAR:3043", TokenType::Rparen);
+        consume_curr!(self, "PAR:3043", TokenType::Rparen);
 
         // { consequence }
-        ensure_curr!(self, "PAR:3044", TokenType::Lbrace);
         let consequence = try_parse!(self, parse_block_stmts);
-        ensure_curr!(self, "PAR:3045", TokenType::Rbrace);
 
         // else { alternative }
         let mut alternative = vec![];
         if self.next_if(TokenType::Else) {
-            ensure_curr!(self, "PAR:3046", TokenType::Lbrace);
             alternative = try_parse!(self, parse_block_stmts);
-            ensure_curr!(self, "PAR:3047", TokenType::Rbrace);
         }
 
         Ok(ast::Expr::If {
@@ -219,104 +215,78 @@ impl<'a> Parser<'a> {
         })
     }
 
-    /*     pub(super) fn parse_function_literal(&mut self) -> PartParsingResult<ast::Expr> {
+    pub(super) fn parse_func_literal_expr(&mut self) -> PartParsingResult<ast::Expr> {
         // fn
+        check_curr!(self, "PAR:3081", TokenType::Func);
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
-        // let token = self.curr_token;
-
-        // ( params )
-        if !self.expect_next("PAR9999"),TokenType::Lparen {
-            return Err(());
-        }
         self.next_token();
 
-        let parameters = try_parse!(self, parse_function_parameters);
+        // ( params )
+        let parameters = try_parse!(self, parse_func_params);
 
         // { body }
-        let body = try_parse!(self, parse_block_statements);
+        let body = try_parse!(self, parse_block_stmts);
 
-        Ok(ast::Expr::FunctionLiteral {
+        Ok(ast::Expr::FuncLiteral {
             loc,
             parameters,
             body,
         })
     }
 
-    pub(super) fn parse_function_call_expr(
+    pub(super) fn parse_func_call_expr(
         &mut self,
-        func: ast::Expr,
+        func_ident: ast::Expr,
     ) -> PartParsingResult<ast::Expr> {
-        // let token = self.curr_token;
+        // (
+        check_curr!(self, "PAR:3091", TokenType::Lparen);
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
-        let args = try_parse!(self, parse_function_arguments);
 
-        Ok(ast::Expr::FunctionCall {
+        // ( params )
+        let args = try_parse!(self, parse_func_args);
+
+        Ok(ast::Expr::FuncCall {
             loc,
-            func: Box::new(func),
+            ident: Box::new(func_ident),
             args,
         })
     }
 
-    //////////////////
+    fn parse_func_params(&mut self) -> PartParsingResult<Vec<ast::Expr>> {
+        // (
+        consume_curr!(self, "PAR:3085", TokenType::Lparen);
 
-    pub(super) fn parse_function_parameters(&mut self) -> PartParsingResult<Vec<ast::Expr>> {
-        // Expr::Ident
         let mut params = vec![];
 
-        if self.curr_token.token_type == TokenType::Rparen {
+        if self.next_if(TokenType::Rparen) {
             return Ok(params);
         }
 
-        params.push(ast::Expr::Ident {
-            loc:  Location::new(self.curr_token.row, self.curr_token.column),
-            name: self.curr_token.literal.clone(),
-        });
-
-        while self.next_token.token_type == TokenType::Comma {
-            self.next_token();
-            self.next_token();
-            params.push(ast::Expr::Ident {
-                loc:  Location::new(self.curr_token.row, self.curr_token.column),
-                name: self.curr_token.literal.clone(),
-            });
-        }
-
-        if !self.expect_next("PAR:9999"),TokenType::Rparen {
-            // error
-            return Err(());
+        params.push(try_parse!(self, parse_ident));
+        while !self.next_if(TokenType::Rparen) {
+            consume_curr!(self, "PAR:3086", TokenType::Comma);
+            params.push(try_parse!(self, parse_ident));
         }
 
         Ok(params)
     }
 
-    pub(super) fn parse_function_arguments(&mut self) -> PartParsingResult<Vec<ast::Expr>> {
+    pub(super) fn parse_func_args(&mut self) -> PartParsingResult<Vec<ast::Expr>> {
         // (
-        // let token = self.curr_token.token_type;
-        self.next_token();
+        consume_curr!(self, "PAR:3095", TokenType::Lparen);
 
         let mut args = vec![];
 
-        if self.curr_token.token_type == TokenType::Rparen {
-            self.next_token();
+        if self.next_if(TokenType::Rparen) {
             return Ok(args);
         }
 
-        // args.push(self.parse_expr(Priority::Lowest));
         args.push(try_parse!(self, parse_expr, Priority::Lowest));
-
-        while self.next_token.token_type == TokenType::Comma {
-            self.next_token();
-            self.next_token();
-            // args.push(self.parse_expr(Priority::Lowest));
+        while !self.next_if(TokenType::Rparen) {
+            consume_curr!(self, "PAR:3096", TokenType::Comma);
             args.push(try_parse!(self, parse_expr, Priority::Lowest));
         }
 
-        if !self.expect_next("PAR9999"),TokenType::Rparen {
-            return Err(());
-        }
-        self.next_token();
-
         Ok(args)
     }
-    */
 }

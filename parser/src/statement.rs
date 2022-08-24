@@ -1,6 +1,6 @@
 use lexer::token::TokenType;
 
-use crate::ensure_curr;
+use crate::consume_curr;
 use crate::try_parse;
 use crate::Parser;
 use crate::PartParsingResult;
@@ -20,7 +20,7 @@ impl<'a> Parser<'a> {
     // { stmt1; stmt2; }
     pub fn parse_block_stmts(&mut self) -> PartParsingResult<Vec<ast::Stmt>> {
         // {
-        ensure_curr!(self, "PAR:2001", TokenType::Lbrace);
+        consume_curr!(self, "PAR:2001", TokenType::Lbrace);
 
         // stmts
         let mut block_stmts = vec![];
@@ -40,20 +40,20 @@ impl<'a> Parser<'a> {
         }
 
         // }
-        ensure_curr!(self, "PAR:2002", TokenType::Rbrace);
+        consume_curr!(self, "PAR:2002", TokenType::Rbrace);
 
         Ok(block_stmts)
     }
 
     fn parse_let_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
         // let
-        ensure_curr!(self, "PAR:2011", TokenType::Let);
+        consume_curr!(self, "PAR:2011", TokenType::Let);
 
         // ident
         let name = try_parse!(self, parse_ident);
 
         // =
-        ensure_curr!(self, "PAR:2012", TokenType::Assign);
+        consume_curr!(self, "PAR:2012", TokenType::Assign);
 
         // expr
         let expr = try_parse!(self, parse_expr, Priority::Lowest);
@@ -66,7 +66,7 @@ impl<'a> Parser<'a> {
 
     fn parse_return_stmt(&mut self) -> PartParsingResult<ast::Stmt> {
         // return
-        ensure_curr!(self, "PAR:2021", TokenType::Return);
+        consume_curr!(self, "PAR:2021", TokenType::Return);
 
         // expr
         let expr = try_parse!(self, parse_expr, Priority::Lowest);

@@ -41,7 +41,7 @@ macro_rules! check_curr {
 }
 
 #[macro_export]
-macro_rules! ensure_curr {
+macro_rules! consume_curr {
     ($self:ident, $code:expr, $exp:expr) => {
         if !$self.check_curr(&[$exp]) {
             $self.raise_err($code, &format!("expected {}", $exp));
