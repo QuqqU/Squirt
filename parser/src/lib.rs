@@ -28,7 +28,7 @@ macro_rules! try_parse {
 macro_rules! check_curr {
     ($self:ident, $code:expr, $exp:expr) => {
         if !$self.check_curr(&[$exp]) {
-            $self.raise_err($code, &format!("expected {}", $exp));
+            $self.raise_err($code, &format!("expected {:?}", $exp));
             return Err(());
         }
     };
@@ -44,7 +44,7 @@ macro_rules! check_curr {
 macro_rules! consume_curr {
     ($self:ident, $code:expr, $exp:expr) => {
         if !$self.check_curr(&[$exp]) {
-            $self.raise_err($code, &format!("expected {}", $exp));
+            $self.raise_err($code, &format!("expected {:?}", $exp));
             return Err(());
         }
         $self.next_token();

@@ -1,6 +1,8 @@
 use std::mem;
 
-use lexer::token::{Token, TokenType};
+use ast::BlockStmts;
+use lexer::token::Token;
+use lexer::tokentype::TokenType;
 use lexer::Lexer;
 
 use crate::parsersettings::ParserSettings;
@@ -39,14 +41,14 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> ParsingResult<ast::Program> {
-        let mut program = ast::Program { stmts: vec![] };
+        let mut program = vec![];
         while self.curr_token.token_type != TokenType::Eof {
             while self.curr_token.token_type == TokenType::Semicolon {
                 self.next_token();
             }
 
             if let Some(stmt) = self.parse_stmt().ok() {
-                program.stmts.push(stmt);
+                program.push(stmt);
             }
             else {
                 self.skip_stmt();
@@ -54,7 +56,9 @@ impl<'a> Parser<'a> {
         }
 
         if self.errors.is_empty() {
-            Ok(program)
+            Ok(ast::Program {
+                stmts: BlockStmts(program),
+            })
         }
         else {
             Err(self.errors.clone())

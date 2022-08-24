@@ -1,4 +1,5 @@
-use lexer::token::TokenType;
+use ast::BlockStmts;
+use lexer::TokenType;
 
 use crate::consume_curr;
 use crate::try_parse;
@@ -18,7 +19,7 @@ impl<'a> Parser<'a> {
     }
 
     // { stmt1; stmt2; }
-    pub fn parse_block_stmts(&mut self) -> PartParsingResult<Vec<ast::Stmt>> {
+    pub fn parse_block_stmts(&mut self) -> PartParsingResult<ast::BlockStmts> {
         // {
         consume_curr!(self, "PAR:2001", TokenType::Lbrace);
 
@@ -42,7 +43,7 @@ impl<'a> Parser<'a> {
         // }
         consume_curr!(self, "PAR:2002", TokenType::Rbrace);
 
-        Ok(block_stmts)
+        Ok(BlockStmts(block_stmts))
     }
 
     fn parse_let_stmt(&mut self) -> PartParsingResult<ast::Stmt> {

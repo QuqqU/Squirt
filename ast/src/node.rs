@@ -1,12 +1,21 @@
 use super::location::Location;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq)]
+pub struct Params(pub Vec<Expr>);
+
+#[derive(PartialEq)]
+pub struct Args(pub Vec<Expr>);
+
+#[derive(PartialEq)]
+pub struct BlockStmts(pub Vec<Stmt>);
+
+#[derive(PartialEq)]
 pub enum PrefixType {
     Minus,
     Bang,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq)]
 pub enum InfixType {
     Assign,
     Plus,
@@ -19,9 +28,8 @@ pub enum InfixType {
     Neq,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq)]
 pub enum Expr {
-    Poison,
     Ident {
         loc:  Location,
         name: String,
@@ -48,22 +56,22 @@ pub enum Expr {
     If {
         loc:         Location,
         condition:   Box<Expr>,
-        consequence: Vec<Stmt>,
-        alternative: Vec<Stmt>,
+        consequence: BlockStmts,
+        alternative: BlockStmts,
     },
     FuncLiteral {
         loc:        Location,
-        parameters: Vec<Expr>, // Vec<Expr::Ident>
-        body:       Vec<Stmt>,
+        parameters: Params, //Vec<Expr>, // Vec<Expr::Ident>
+        body:       BlockStmts,
     },
     FuncCall {
         loc:   Location,  // loc of Lparen
         ident: Box<Expr>, //Expr::FuncLiteral
-        args:  Vec<Expr>,
+        args:  Args,
     },
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq)]
 pub enum Stmt {
     Let {
         name: Expr, // Expr::Ident
@@ -77,7 +85,6 @@ pub enum Stmt {
     },
 }
 
-#[derive(Debug, Clone)]
 pub struct Program {
-    pub stmts: Vec<Stmt>,
+    pub stmts: BlockStmts,
 }

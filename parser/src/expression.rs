@@ -1,5 +1,5 @@
-use ast::{InfixType, Location, PrefixType};
-use lexer::token::TokenType;
+use ast::{Args, BlockStmts, InfixType, Location, Params, PrefixType};
+use lexer::TokenType;
 
 use super::Parser;
 use crate::{check_curr, consume_curr, Priority};
@@ -52,7 +52,7 @@ impl<'a> Parser<'a> {
     }
 
     #[inline]
-    fn token_2_prefix(token: TokenType) -> PrefixType {
+    fn token_2_prefix(token: &TokenType) -> PrefixType {
         match token {
             TokenType::Minus => PrefixType::Minus,
             TokenType::Bang => PrefixType::Bang,
@@ -61,7 +61,7 @@ impl<'a> Parser<'a> {
     }
 
     #[inline]
-    fn token_2_infix(token: TokenType) -> InfixType {
+    fn token_2_infix(token: &TokenType) -> InfixType {
         match token {
             TokenType::Assign => InfixType::Assign,
             TokenType::Plus => InfixType::Plus,
@@ -123,7 +123,7 @@ impl<'a> Parser<'a> {
 
         // prefix operator
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
-        let operator = Parser::token_2_prefix(self.curr_token.token_type);
+        let operator = Parser::token_2_prefix(&self.curr_token.token_type);
         self.next_token();
 
         // expr
@@ -159,7 +159,7 @@ impl<'a> Parser<'a> {
 
         // infix operator
         let loc = Location::new(self.curr_token.row, self.curr_token.column);
-        let operator = Parser::token_2_infix(self.curr_token.token_type);
+        let operator = Parser::token_2_infix(&self.curr_token.token_type);
         let precedence = self.curr_precedence();
         self.next_token();
 
@@ -202,7 +202,7 @@ impl<'a> Parser<'a> {
         let consequence = try_parse!(self, parse_block_stmts);
 
         // else { alternative }
-        let mut alternative = vec![];
+        let mut alternative = BlockStmts(vec![]);
         if self.next_if(TokenType::Else) {
             alternative = try_parse!(self, parse_block_stmts);
         }
@@ -252,14 +252,14 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn parse_func_params(&mut self) -> PartParsingResult<Vec<ast::Expr>> {
+    fn parse_func_params(&mut self) -> PartParsingResult<Params> {
         // (
         consume_curr!(self, "PAR:3085", TokenType::Lparen);
 
         let mut params = vec![];
 
         if self.next_if(TokenType::Rparen) {
-            return Ok(params);
+            return Ok(Params(params));
         }
 
         params.push(try_parse!(self, parse_ident));
@@ -268,17 +268,17 @@ impl<'a> Parser<'a> {
             params.push(try_parse!(self, parse_ident));
         }
 
-        Ok(params)
+        Ok(Params(params))
     }
 
-    pub(super) fn parse_func_args(&mut self) -> PartParsingResult<Vec<ast::Expr>> {
+    pub(super) fn parse_func_args(&mut self) -> PartParsingResult<Args> {
         // (
         consume_curr!(self, "PAR:3095", TokenType::Lparen);
 
         let mut args = vec![];
 
         if self.next_if(TokenType::Rparen) {
-            return Ok(args);
+            return Ok(Args(args));
         }
 
         args.push(try_parse!(self, parse_expr, Priority::Lowest));
@@ -287,6 +287,6 @@ impl<'a> Parser<'a> {
             args.push(try_parse!(self, parse_expr, Priority::Lowest));
         }
 
-        Ok(args)
+        Ok(Args(args))
     }
 }

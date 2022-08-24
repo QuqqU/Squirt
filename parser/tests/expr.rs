@@ -1,12 +1,7 @@
 use ast::*;
-use lexer::token::Token;
+use lexer::Token;
 use parser::*;
 
-macro_rules! loc {
-    ($row: expr, $column: expr) => {
-        Location::new($row, $column)
-    };
-}
 macro_rules! strf {
     ($str: expr) => {
         String::from($str)
@@ -65,9 +60,9 @@ fn parse_ident() {
 
     let program = Parser::new(input).parse().unwrap();
 
-    assert_eq!(program.stmts.len(), expected.len());
+    assert_eq!(program.stmts.0.len(), expected.len());
 
-    for (stmt, exp) in program.stmts.iter().zip(expected.iter()) {
+    for (stmt, exp) in program.stmts.0.iter().zip(expected.iter()) {
         assert_eq!(stmt, exp);
     }
 }
@@ -117,9 +112,9 @@ fn parse_int() {
 
     let program = Parser::new(input).parse().unwrap();
 
-    assert_eq!(program.stmts.len(), expected.len());
+    assert_eq!(program.stmts.0.len(), expected.len());
 
-    for (stmt, exp) in program.stmts.iter().zip(expected.iter()) {
+    for (stmt, exp) in program.stmts.0.iter().zip(expected.iter()) {
         assert_eq!(stmt, exp);
     }
 }
@@ -162,9 +157,9 @@ fn parse_bool() {
 
     let program = Parser::new(input).parse().unwrap();
 
-    assert_eq!(program.stmts.len(), expected.len());
+    assert_eq!(program.stmts.0.len(), expected.len());
 
-    for (stmt, exp) in program.stmts.iter().zip(expected.iter()) {
+    for (stmt, exp) in program.stmts.0.iter().zip(expected.iter()) {
         assert_eq!(stmt, exp);
     }
 }
@@ -192,20 +187,20 @@ fn parse_if_expr() {
                     value: 2,
                 }),
             }),
-            consequence: vec![Stmt::Return {
+            consequence: BlockStmts(vec![Stmt::Return {
                 expr: Expr::Int {
                     loc:   loc!(3, 16),
                     value: 3,
                 },
-            }],
-            alternative: vec![],
+            }]),
+            alternative: BlockStmts(vec![]),
         },
     };
 
     let program = Parser::new(input).parse().unwrap();
 
-    assert_eq!(program.stmts.len(), 1);
-    assert_eq!(program.stmts.first().unwrap(), &expected);
+    assert_eq!(program.stmts.0.len(), 1);
+    assert_eq!(program.stmts.0.first().unwrap(), &expected);
 }
 
 #[test]
@@ -233,25 +228,25 @@ fn parse_if_else_expr() {
                     value: 2,
                 }),
             }),
-            consequence: vec![Stmt::Return {
+            consequence: BlockStmts(vec![Stmt::Return {
                 expr: Expr::Int {
                     loc:   loc!(3, 16),
                     value: 3,
                 },
-            }],
-            alternative: vec![Stmt::Return {
+            }]),
+            alternative: BlockStmts(vec![Stmt::Return {
                 expr: Expr::Int {
                     loc:   loc!(5, 16),
                     value: 5,
                 },
-            }],
+            }]),
         },
     };
 
     let program = Parser::new(input).parse().unwrap();
 
-    assert_eq!(program.stmts.len(), 1);
-    assert_eq!(program.stmts.first().unwrap(), &expected);
+    assert_eq!(program.stmts.0.len(), 1);
+    assert_eq!(program.stmts.0.first().unwrap(), &expected);
 }
 
 #[test]
@@ -271,7 +266,7 @@ fn parse_func_literal_expr() {
         },
         expr: Expr::FuncLiteral {
             loc:        loc!(2, 13),
-            parameters: vec![
+            parameters: Params(vec![
                 Expr::Ident {
                     loc:  loc!(2, 16),
                     name: "a".to_string(),
@@ -284,8 +279,8 @@ fn parse_func_literal_expr() {
                     loc:  loc!(2, 22),
                     name: "c".to_string(),
                 },
-            ],
-            body:       vec![
+            ]),
+            body:       BlockStmts(vec![
                 Stmt::Expr {
                     expr: Expr::Infix {
                         loc:      loc!(3, 11),
@@ -328,14 +323,14 @@ fn parse_func_literal_expr() {
                         }),
                     },
                 },
-            ],
+            ]),
         },
     };
 
     let program = Parser::new(input).parse().unwrap();
 
-    assert_eq!(program.stmts.len(), 1);
-    assert_eq!(program.stmts.first().unwrap(), &expected);
+    assert_eq!(program.stmts.0.len(), 1);
+    assert_eq!(program.stmts.0.first().unwrap(), &expected);
 }
 
 #[test]
@@ -355,7 +350,7 @@ fn parse_func_call_expr() {
                 loc:  loc!(2, 13),
                 name: "abc".to_string(),
             }),
-            args:  vec![
+            args:  Args(vec![
                 Expr::Ident {
                     loc:  loc!(2, 17),
                     name: "a".to_string(),
@@ -376,12 +371,12 @@ fn parse_func_call_expr() {
                         value: 3,
                     }),
                 },
-            ],
+            ]),
         },
     };
 
     let program = Parser::new(input).parse().unwrap();
 
-    assert_eq!(program.stmts.len(), 1);
-    assert_eq!(program.stmts.first().unwrap(), &expected);
+    assert_eq!(program.stmts.0.len(), 1);
+    assert_eq!(program.stmts.0.first().unwrap(), &expected);
 }

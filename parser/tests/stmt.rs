@@ -1,12 +1,7 @@
 use ast::*;
-use lexer::token::{Token, TokenType};
+use lexer::{Token, TokenType};
 use parser::*;
 
-macro_rules! loc {
-    ($row: expr, $column: expr) => {
-        Location::new($row, $column)
-    };
-}
 macro_rules! strf {
     ($str: expr) => {
         String::from($str)
@@ -68,9 +63,9 @@ fn parse_empty_stmt() {
 
     let program = Parser::new(input).parse().unwrap();
 
-    assert_eq!(program.stmts.len(), expected.len());
+    assert_eq!(program.stmts.0.len(), expected.len());
 
-    for (stmt, exp) in program.stmts.iter().zip(expected.iter()) {
+    for (stmt, exp) in program.stmts.0.iter().zip(expected.iter()) {
         assert_eq!(stmt, exp);
     }
 }
@@ -107,9 +102,9 @@ let ten1 = ten2;
 
     let program = Parser::new(input).parse().unwrap();
 
-    assert_eq!(program.stmts.len(), expected.len());
+    assert_eq!(program.stmts.0.len(), expected.len());
 
-    for (stmt, exp) in program.stmts.iter().zip(expected.iter()) {
+    for (stmt, exp) in program.stmts.0.iter().zip(expected.iter()) {
         assert_eq!(stmt, exp);
     }
 }
@@ -132,12 +127,12 @@ let a 5;
         error(
             Token::new(TokenType::Assign, "=", 3, 9),
             "PAR:3011",
-            format!("expected {}", TokenType::Ident),
+            format!("expected {:?}", TokenType::Ident),
         ),
         error(
             Token::new(TokenType::Int, "5", 5, 7),
             "PAR:2012",
-            format!("expected {}", TokenType::Assign),
+            format!("expected {:?}", TokenType::Assign),
         ),
     ];
 
@@ -188,9 +183,9 @@ return 5;
 
     let program = Parser::new(input).parse().unwrap();
 
-    assert_eq!(program.stmts.len(), expected.len());
+    assert_eq!(program.stmts.0.len(), expected.len());
 
-    for (stmt, exp) in program.stmts.iter().zip(expected.iter()) {
+    for (stmt, exp) in program.stmts.0.iter().zip(expected.iter()) {
         assert_eq!(stmt, exp);
     }
 }
@@ -233,9 +228,9 @@ fn parse_expr_stmt() {
 
     let program = Parser::new(input).parse().unwrap();
 
-    assert_eq!(program.stmts.len(), expected.len());
+    assert_eq!(program.stmts.0.len(), expected.len());
 
-    for (stmt, exp) in program.stmts.iter().zip(expected.iter()) {
+    for (stmt, exp) in program.stmts.0.iter().zip(expected.iter()) {
         assert_eq!(stmt, exp);
     }
 }
@@ -282,9 +277,9 @@ fn parse_block_stmts() {
 
     let block_stmts = Parser::new(input).parse_block_stmts().unwrap();
 
-    assert_eq!(block_stmts.len(), expected.len());
+    assert_eq!(block_stmts.0.len(), expected.len());
 
-    for (stmt, exp) in block_stmts.iter().zip(expected.iter()) {
+    for (stmt, exp) in block_stmts.0.iter().zip(expected.iter()) {
         assert_eq!(stmt, exp);
     }
 }

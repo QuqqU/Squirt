@@ -1,4 +1,5 @@
-use super::token::{look_up_ident, Token, TokenType};
+use super::token::Token;
+use crate::tokentype::{look_up_ident, TokenType};
 use std::{iter::Peekable, str::Chars};
 pub struct Lexer<'a> {
     pub input: Peekable<Chars<'a>>,

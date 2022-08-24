@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use lexer::token::TokenType;
+use lexer::TokenType;
 
 use crate::{InfixParseFn, PrefixParseFn};
 
@@ -82,4 +82,17 @@ impl ParserSettings {
     fn register_infix(&mut self, token_type: TokenType, infix_parse_fn: InfixParseFn) {
         self.infix_parse_funcs.insert(token_type, infix_parse_fn);
     }
+}
+
+#[test]
+fn priority() {
+    assert!(
+        Priority::Lowest < Priority::Assign
+            && Priority::Assign < Priority::Equal
+            && Priority::Equal < Priority::Compare
+            && Priority::Compare < Priority::Sum
+            && Priority::Sum < Priority::Product
+            && Priority::Product < Priority::Prefix
+            && Priority::Prefix < Priority::Call
+    );
 }
