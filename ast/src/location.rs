@@ -7,7 +7,7 @@ macro_rules! loc {
     };
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct Location {
     pub row:    i64,
     pub column: i64,

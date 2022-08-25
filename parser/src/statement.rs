@@ -1,5 +1,5 @@
 use ast::BlockStmts;
-use lexer::TokenType;
+use token::TokenType;
 
 use crate::consume_curr;
 use crate::try_parse;

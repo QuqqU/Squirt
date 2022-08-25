@@ -1,5 +1,5 @@
 use ast::{Args, BlockStmts, InfixType, Location, Params, PrefixType};
-use lexer::TokenType;
+use token::TokenType;
 
 use super::Parser;
 use crate::{check_curr, consume_curr, Priority};

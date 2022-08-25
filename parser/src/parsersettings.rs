@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use lexer::TokenType;
+use token::TokenType;
 
 use crate::{InfixParseFn, PrefixParseFn};
 

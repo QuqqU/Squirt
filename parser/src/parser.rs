@@ -1,5 +1,4 @@
-use lexer::token::Token;
-use lexer::tokentype::TokenType;
+use token::{Token, TokenType};
 
 use crate::parsersettings::ParserSettings;
 use crate::ParsingResult;

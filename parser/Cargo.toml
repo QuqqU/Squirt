@@ -8,3 +8,4 @@ version = "0.1.0"
 [dependencies]
 ast = {path = "../ast"}
 lexer = {path = "../lexer"}
+token = {path = "../token"}

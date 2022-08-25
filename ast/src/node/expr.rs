@@ -1,5 +1,100 @@
-use crate::node::*;
+use super::stmt::BlockStmts;
+use crate::Location;
+
 use std::fmt;
+
+#[derive(PartialEq, Clone)]
+pub enum PrefixType {
+    Minus,
+    Bang,
+}
+
+#[derive(PartialEq, Clone)]
+pub enum InfixType {
+    Assign,
+    Plus,
+    Minus,
+    Asterisk,
+    Slash,
+    Lt,
+    Gt,
+    Eq,
+    Neq,
+}
+
+#[derive(PartialEq, Clone)]
+pub struct Params(pub Vec<Expr>);
+
+#[derive(PartialEq, Clone)]
+pub struct Args(pub Vec<Expr>);
+
+#[derive(PartialEq, Clone)]
+pub enum Expr {
+    Ident {
+        loc:  Location,
+        name: String,
+    },
+    Int {
+        loc:   Location,
+        value: i64,
+    },
+    Bool {
+        loc:   Location,
+        value: bool,
+    },
+    Prefix {
+        loc:      Location,
+        operator: PrefixType,
+        right:    Box<Expr>,
+    },
+    Infix {
+        loc:      Location,
+        left:     Box<Expr>,
+        operator: InfixType,
+        right:    Box<Expr>,
+    },
+    If {
+        loc:         Location,
+        condition:   Box<Expr>,
+        consequence: BlockStmts,
+        alternative: BlockStmts,
+    },
+    FuncLiteral {
+        loc:        Location,
+        parameters: Params, //Vec<Expr>, // Vec<Expr::Ident>
+        body:       BlockStmts,
+    },
+    FuncCall {
+        loc:   Location,  // loc of Lparen
+        ident: Box<Expr>, //Expr::FuncLiteral
+        args:  Args,
+    },
+}
+
+impl fmt::Debug for PrefixType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Minus => write!(f, "-"),
+            Self::Bang => write!(f, "!"),
+        }
+    }
+}
+
+impl fmt::Debug for InfixType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Assign => write!(f, "="),
+            Self::Plus => write!(f, "+"),
+            Self::Minus => write!(f, "-"),
+            Self::Asterisk => write!(f, "*"),
+            Self::Slash => write!(f, "/"),
+            Self::Lt => write!(f, "<"),
+            Self::Gt => write!(f, ">"),
+            Self::Eq => write!(f, "=="),
+            Self::Neq => write!(f, "!="),
+        }
+    }
+}
 
 impl fmt::Debug for Params {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -26,54 +121,6 @@ impl fmt::Debug for Args {
             s += &format!("{:?}", expr);
         }
         write!(f, "({})", s)
-    }
-}
-
-impl BlockStmts {
-    fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-}
-
-impl fmt::Debug for BlockStmts {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.is_empty() {
-            return write!(f, "{{}}");
-        }
-
-        let mut s = String::from("");
-        for (idx, expr) in self.0.iter().enumerate() {
-            if idx > 0 {
-                s += " ";
-            }
-            s += &format!("{:?}", expr);
-        }
-        write!(f, "{{ {} }}", s)
-    }
-}
-
-impl fmt::Debug for PrefixType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Minus => write!(f, "-"),
-            Self::Bang => write!(f, "!"),
-        }
-    }
-}
-
-impl fmt::Debug for InfixType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Assign => write!(f, "="),
-            Self::Plus => write!(f, "+"),
-            Self::Minus => write!(f, "-"),
-            Self::Asterisk => write!(f, "*"),
-            Self::Slash => write!(f, "/"),
-            Self::Lt => write!(f, "<"),
-            Self::Gt => write!(f, ">"),
-            Self::Eq => write!(f, "=="),
-            Self::Neq => write!(f, "!="),
-        }
     }
 }
 
@@ -125,25 +172,9 @@ impl fmt::Debug for Expr {
     }
 }
 
-impl fmt::Debug for Stmt {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Let { name, expr } => write!(f, "let {:?} = {:?};", name, expr),
-            Self::Return { expr } => write!(f, "return {:?};", expr),
-            Self::Expr { expr } => write!(f, "{:?};", expr),
-        }
-    }
-}
-
-impl fmt::Debug for Program {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.program)
-    }
-}
-
 #[cfg(test)]
 mod fmt_dbg {
-    use crate::{Args, BlockStmts, Expr, InfixType, Location, Params, Stmt};
+    use crate::{Args, Expr, InfixType, Location, Params};
 
     #[test]
     fn params_empty() {
@@ -233,51 +264,6 @@ mod fmt_dbg {
                         value: 3,
                     }),
                 },
-            ])
-        );
-        assert_eq!(expected, dbg_str);
-    }
-
-    #[test]
-    fn block_stmts_empty() {
-        let expected = "{}";
-        let dbg_str = format!("{:?}", BlockStmts(vec![]));
-        assert_eq!(expected, dbg_str);
-    }
-
-    #[test]
-    fn block_stmts_singleton() {
-        let expected = "{ return a; }";
-        let dbg_str = format!(
-            "{:?}",
-            BlockStmts(vec![Stmt::Return {
-                expr: Expr::Ident {
-                    loc:  Location::new(0, 0),
-                    name: "a".to_string(),
-                },
-            }])
-        );
-        assert_eq!(expected, dbg_str);
-    }
-
-    #[test]
-    fn block_stmts() {
-        let expected = "{ return a; return b; }";
-        let dbg_str = format!(
-            "{:?}",
-            BlockStmts(vec![
-                Stmt::Return {
-                    expr: Expr::Ident {
-                        loc:  Location::new(0, 0),
-                        name: "a".to_string(),
-                    },
-                },
-                Stmt::Return {
-                    expr: Expr::Ident {
-                        loc:  Location::new(0, 0),
-                        name: "b".to_string(),
-                    },
-                }
             ])
         );
         assert_eq!(expected, dbg_str);

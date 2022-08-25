@@ -1,6 +1,7 @@
 use ast::*;
-use lexer::{Lexer, Token};
+use lexer::Lexer;
 use parser::*;
+use token::Token;
 
 macro_rules! strf {
     ($str: expr) => {

@@ -1,6 +1,5 @@
-use lexer::token::Token;
-use lexer::tokentype::TokenType;
 use lexer::Lexer;
+use token::{Token, TokenType};
 
 type Answer = Vec<TokenType>;
 
